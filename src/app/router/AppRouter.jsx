@@ -56,6 +56,7 @@ const router = createBrowserRouter([
               { path: 'shadowing/:lessonId', element: <ShadowingPage /> },
               { path: 'admin/shadowing', element: <AdminShadowingPage /> },
               { path: 'roleplay', element: <RoleplayPage /> },
+              { path: 'roleplay/:sessionId', element: <RoleplayPage /> },
             ],
           },
         ],
