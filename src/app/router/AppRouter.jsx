@@ -16,6 +16,7 @@ import TypingPage from '@/pages/typing/TypingPage'
 import PublicCollectionsPage from '@/pages/publicCollections/PublicCollectionsPage'
 import AiPage from '@/pages/ai/AiPage'
 import ShadowingPage from '@/pages/shadowing/ShadowingPage'
+import AdminShadowingPage from '@/pages/admin/AdminShadowingPage'
 import RoleplayPage from '@/pages/roleplay/RoleplayPage'
 
 const router = createBrowserRouter([
@@ -52,6 +53,8 @@ const router = createBrowserRouter([
               { path: 'public/collections/:collectionId', element: <PublicCollectionsPage /> },
               { path: 'ai', element: <AiPage /> },
               { path: 'shadowing', element: <ShadowingPage /> },
+              { path: 'shadowing/:lessonId', element: <ShadowingPage /> },
+              { path: 'admin/shadowing', element: <AdminShadowingPage /> },
               { path: 'roleplay', element: <RoleplayPage /> },
             ],
           },
