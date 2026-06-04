@@ -4,6 +4,7 @@ import {
   FiBookOpen,
   FiChevronLeft,
   FiChevronRight,
+  FiDownload,
   FiEdit3,
   FiFilter,
   FiPlus,
@@ -20,6 +21,7 @@ import PageHeader from '@/components/common/PageHeader'
 import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
 import { getCollectionTitle } from '@/features/collection/collectionUtils'
 import { useCollections } from '@/features/collection/useCollections'
+import { useExportAllVocabulariesPdf } from '@/features/export/usePdfExport'
 import VocabularyCard from '@/features/vocabulary/components/VocabularyCard'
 import VocabularyFormDialog from '@/features/vocabulary/components/VocabularyFormDialog'
 import {
@@ -165,7 +167,7 @@ function VocabularyDetailDialog({ vocabularyId, collections, onClose }) {
                 {linkedCollections.length ? linkedCollections.map((collection) => (
                   <span key={collection.id} className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-secondary-foreground">
                     {collection.title || collection.name || `Collection ${collection.id}`}
-                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => handleRemove(collection.id)} aria-label="Remove from collection">×</button>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => handleRemove(collection.id)} aria-label="Remove from collection">x</button>
                   </span>
                 )) : <p className="text-sm text-muted-foreground">This vocabulary is not linked to any collection yet.</p>}
               </div>
@@ -203,6 +205,7 @@ export default function VocabulariesPage() {
   const createMutation = useCreateVocabulary()
   const updateMutation = useUpdateVocabulary()
   const deleteMutation = useDeleteVocabulary()
+  const exportAllVocabulariesPdf = useExportAllVocabulariesPdf()
 
   const activeQuery = collectionFilter === ALL_COLLECTIONS ? allVocabulariesQuery : collectionVocabulariesQuery
   const normalized = normalizeVocabularyList(activeQuery.data, PAGE_SIZE)
@@ -259,12 +262,32 @@ export default function VocabulariesPage() {
     }
   }
 
+  const handleExportAllVocabulariesPdf = async () => {
+    try {
+      await exportAllVocabulariesPdf.mutateAsync()
+      toast.success('Vocabulary PDF download started')
+    } catch (error) {
+      toast.error(error.message || 'Unable to export vocabulary PDF')
+    }
+  }
+
   if (activeQuery.isLoading || collectionQuery.isLoading) return <VocabularySkeleton />
 
   if (activeQuery.error) {
     return (
       <ResponsiveContentContainer className="space-y-8">
-        <PageHeader title="Vocabulary" description="Manage words and phrases for collections and practice." actions={<Button onClick={openCreateForm}><FiPlus aria-hidden="true" /> Add Vocabulary</Button>} />
+        <PageHeader
+          title="Vocabulary"
+          description="Manage words and phrases for collections and practice."
+          actions={
+            <>
+              <Button variant="secondary" onClick={handleExportAllVocabulariesPdf} disabled={exportAllVocabulariesPdf.isPending}>
+                <FiDownload aria-hidden="true" /> {exportAllVocabulariesPdf.isPending ? 'Exporting...' : 'Export all PDF'}
+              </Button>
+              <Button onClick={openCreateForm}><FiPlus aria-hidden="true" /> Add Vocabulary</Button>
+            </>
+          }
+        />
         <ErrorFallback title="Unable to load vocabulary" description={activeQuery.error.message} onRetry={() => activeQuery.refetch()} />
       </ResponsiveContentContainer>
     )
@@ -279,7 +302,14 @@ export default function VocabulariesPage() {
         eyebrow="Vocabulary manager"
         title="Vocabulary"
         description="Create, organize, and connect vocabulary to collections before flashcards, quizzes, and typing practice."
-        actions={<Button onClick={openCreateForm}><FiPlus aria-hidden="true" /> Add Vocabulary</Button>}
+        actions={
+          <>
+            <Button variant="secondary" onClick={handleExportAllVocabulariesPdf} disabled={exportAllVocabulariesPdf.isPending}>
+              <FiDownload aria-hidden="true" /> {exportAllVocabulariesPdf.isPending ? 'Exporting...' : 'Export all PDF'}
+            </Button>
+            <Button onClick={openCreateForm}><FiPlus aria-hidden="true" /> Add Vocabulary</Button>
+          </>
+        }
       />
 
       <section className="rounded-card border border-border bg-card p-4 shadow-sm">
@@ -346,8 +376,8 @@ export default function VocabulariesPage() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Vocabulary entries can be connected to collections now. Flashcard, quiz, and typing session flows are intentionally not implemented in this step.</p>
         </div>
         <div className="rounded-card border border-border bg-card p-5 shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-semibold">Security rules</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Requests use the authenticated API client. The UI never sends user identity fields and only uses collection/vocabulary ids from backend data.</p>
+          <h2 className="text-xl font-semibold">Export and security rules</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">PDF export uses the authenticated API client with blob responses. The UI never sends user identity fields or exposes tokens in URLs.</p>
         </div>
       </section>
 

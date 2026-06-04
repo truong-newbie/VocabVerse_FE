@@ -1,4 +1,4 @@
-import { FiCalendar, FiEdit3, FiExternalLink, FiLock, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiCalendar, FiDownload, FiEdit3, FiExternalLink, FiLock, FiTrash2, FiUsers } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { formatCollectionDate, getCollectionTitle, getVocabularyCount } from '../collectionUtils'
@@ -14,7 +14,7 @@ function getVisibilityIcon(visibility) {
   return <FiLock aria-hidden="true" className="h-3.5 w-3.5" />
 }
 
-export default function CollectionCard({ collection, onOpen, onEdit, onDelete }) {
+export default function CollectionCard({ collection, onOpen, onEdit, onDelete, onExport, isExporting }) {
   const visibility = collection.visibility || 'PRIVATE'
   const isSystem = visibility === 'SYSTEM'
   const title = getCollectionTitle(collection)
@@ -47,9 +47,12 @@ export default function CollectionCard({ collection, onOpen, onEdit, onDelete })
         <span>Updated {formatCollectionDate(updatedDate)}</span>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-2">
+      <div className="mt-5 grid grid-cols-2 gap-2">
         <Button variant="secondary" onClick={() => onOpen(collection)} aria-label={`Open ${title}`}>
           <FiExternalLink aria-hidden="true" /> Open
+        </Button>
+        <Button variant="outline" onClick={() => onExport(collection)} disabled={isExporting} aria-label={`Export ${title} as PDF`}>
+          <FiDownload aria-hidden="true" /> PDF
         </Button>
         <Button variant="outline" onClick={() => onEdit(collection)} aria-label={`Edit ${title}`}>
           <FiEdit3 aria-hidden="true" /> Edit

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { FiBookOpen, FiChevronLeft, FiChevronRight, FiLayers, FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import { FiBookOpen, FiChevronLeft, FiChevronRight, FiDownload, FiLayers, FiPlus, FiSearch, FiX } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
@@ -11,6 +11,7 @@ import ResponsiveContentContainer from '@/components/common/ResponsiveContentCon
 import CollectionCard from '@/features/collection/components/CollectionCard'
 import { formatCollectionDate, getCollectionTitle, getVocabularyCount } from '@/features/collection/collectionUtils'
 import CollectionFormDialog from '@/features/collection/components/CollectionFormDialog'
+import { useExportCollectionPdf } from '@/features/export/usePdfExport'
 import {
   useCollection,
   useCollections,
@@ -75,7 +76,7 @@ function CollectionsSkeleton() {
   )
 }
 
-function CollectionDetailDialog({ collectionId, onClose }) {
+function CollectionDetailDialog({ collectionId, onClose, onExport, isExporting }) {
   const query = useCollection(collectionId, { enabled: Boolean(collectionId) })
   const collection = query.data
 
@@ -122,6 +123,9 @@ function CollectionDetailDialog({ collectionId, onClose }) {
             <div className="rounded-2xl border border-dashed border-border bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
               Vocabulary table and import flows are intentionally not implemented in this step.
             </div>
+            <Button className="w-full" onClick={() => onExport(collection)} disabled={isExporting}>
+              <FiDownload aria-hidden="true" /> {isExporting ? 'Exporting collection PDF...' : 'Export collection PDF'}
+            </Button>
           </div>
         )}
       </section>
@@ -141,6 +145,7 @@ export default function CollectionsPage() {
   const createMutation = useCreateCollection()
   const updateMutation = useUpdateCollection()
   const deleteMutation = useDeleteCollection()
+  const exportCollectionPdf = useExportCollectionPdf()
 
   const normalized = normalizeCollectionList(collectionsQuery.data)
   const filteredCollections = useMemo(() => {
@@ -191,6 +196,17 @@ export default function CollectionsPage() {
       setDeleteTarget(null)
     } catch (error) {
       toast.error(error.message || 'Unable to delete collection')
+    }
+  }
+
+  const handleExportCollectionPdf = async (collection) => {
+    if (!collection?.id) return
+
+    try {
+      await exportCollectionPdf.mutateAsync(collection.id)
+      toast.success('Collection PDF download started')
+    } catch (error) {
+      toast.error(error.message || 'Unable to export collection PDF')
     }
   }
 
@@ -256,6 +272,8 @@ export default function CollectionsPage() {
               onOpen={(item) => setDetailId(item.id)}
               onEdit={openEditForm}
               onDelete={handleDeleteRequest}
+              onExport={handleExportCollectionPdf}
+              isExporting={exportCollectionPdf.isPending}
             />
           ))}
         </section>
@@ -312,7 +330,12 @@ export default function CollectionsPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      <CollectionDetailDialog collectionId={detailId} onClose={() => setDetailId(null)} />
+      <CollectionDetailDialog
+        collectionId={detailId}
+        onClose={() => setDetailId(null)}
+        onExport={handleExportCollectionPdf}
+        isExporting={exportCollectionPdf.isPending}
+      />
     </ResponsiveContentContainer>
   )
 }
