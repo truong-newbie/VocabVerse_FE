@@ -2,28 +2,36 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiX } from 'react-icons/fi'
-import { useAuthStore } from '../../app/store/authStore'
-import { useThemeStore } from '../../app/store/themeStore'
-import { useCurrentUser } from '../../features/auth/useCurrentUser'
+import { useAuthStore } from '@/app/store/authStore'
+import { useThemeStore } from '@/app/store/themeStore'
+import { useLogout } from '@/features/auth/useAuthActions'
+import { useCurrentUser } from '@/features/auth/useCurrentUser'
 import Button from '../ui/Button'
 
 export default function AppHeader({ mobileOpen, onToggleMobile }) {
   const navigate = useNavigate()
-  const logout = useAuthStore((state) => state.logout)
   const user = useAuthStore((state) => state.user)
   const theme = useThemeStore((state) => state.theme)
   const setTheme = useThemeStore((state) => state.setTheme)
+  const logoutMutation = useLogout()
   const [query, setQuery] = useState('')
 
-  useCurrentUser()
+  const currentUserQuery = useCurrentUser()
 
-  const handleLogout = () => {
-    logout()
-    toast.success('Signed out')
-    navigate('/login', { replace: true })
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+      toast.success('Signed out')
+    } catch (error) {
+      toast.error(error.message || 'Signed out locally')
+    } finally {
+      navigate('/login', { replace: true })
+    }
   }
 
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
+  const displayName = user?.fullName || user?.displayName || user?.username || user?.email || 'Learner'
+  const subtitle = currentUserQuery.isLoading ? 'Loading profile...' : user?.email || 'Vocabulary path'
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/82 backdrop-blur-xl">
@@ -50,14 +58,14 @@ export default function AppHeader({ mobileOpen, onToggleMobile }) {
           </Button>
           <div className="hidden items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm sm:flex">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-sm font-bold text-accent-foreground">
-              {(user?.username || user?.fullName || 'U').slice(0, 1).toUpperCase()}
+              {displayName.slice(0, 1).toUpperCase()}
             </div>
-            <div className="max-w-32">
-              <p className="truncate text-sm font-semibold">{user?.fullName || user?.username || 'Learner'}</p>
-              <p className="text-xs text-muted-foreground">Vocabulary path</p>
+            <div className="max-w-40">
+              <p className="truncate text-sm font-semibold">{displayName}</p>
+              <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
             </div>
           </div>
-          <Button variant="ghost" className="h-10 w-10 px-0" onClick={handleLogout} aria-label="Log out">
+          <Button variant="ghost" className="h-10 w-10 px-0" onClick={handleLogout} aria-label="Log out" disabled={logoutMutation.isPending}>
             <FiLogOut aria-hidden="true" />
           </Button>
         </div>

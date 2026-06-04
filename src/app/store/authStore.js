@@ -55,8 +55,23 @@ export const useAuthStore = create((set) => ({
     })
   },
   setUser: (user) => set({ user }),
+  clearUser: () => set({ user: null }),
   logout: () => {
     authStorage.clear()
     set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false, isHydrated: true })
   },
 }))
+
+export function extractAuthTokens(payload) {
+  const source = payload?.result || payload?.data || payload
+
+  return {
+    accessToken: source?.accessToken || source?.token || source?.access_token || null,
+    refreshToken: source?.refreshToken || source?.refresh_token || null,
+  }
+}
+
+export function extractAuthUser(payload) {
+  const source = payload?.result || payload?.data || payload
+  return source?.user || source?.currentUser || source?.profile || null
+}

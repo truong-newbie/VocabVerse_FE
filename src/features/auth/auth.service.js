@@ -1,23 +1,31 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
+const AUTH_BASE = '/api/v1/auth'
+
 export const authService = {
   async login(credentials) {
-    const response = await apiClient.post('/auth/login', credentials)
+    const response = await apiClient.post(`${AUTH_BASE}/login`, credentials)
     return unwrapApiResponse(response)
   },
 
   async register(payload) {
-    const response = await apiClient.post('/auth/register', payload)
+    const response = await apiClient.post(`${AUTH_BASE}/register`, payload)
+    return unwrapApiResponse(response)
+  },
+
+  async refreshToken(refreshToken) {
+    const response = await apiClient.post(`${AUTH_BASE}/refresh`, { refreshToken })
     return unwrapApiResponse(response)
   },
 
   async getCurrentUser() {
-    const response = await apiClient.get('/user')
+    const response = await apiClient.get('/api/v1/users/me')
     return unwrapApiResponse(response)
   },
 
-  async logout() {
-    return apiClient.post('/auth/logout')
+  async logout(refreshToken) {
+    const response = await apiClient.post(`${AUTH_BASE}/logout`, refreshToken ? { refreshToken } : undefined)
+    return unwrapApiResponse(response)
   },
 }

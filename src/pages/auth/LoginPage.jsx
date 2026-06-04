@@ -1,31 +1,46 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { toast } from 'sonner'
-import Button from '../../components/ui/Button'
-import { useLogin } from '../../features/auth/useAuthActions'
+import Button from '@/components/ui/Button'
+import FormField from '@/components/forms/FormField'
+import { formInputClass } from '@/components/forms/formStyles'
+import { useLogin } from '@/features/auth/useAuthActions'
+
+const loginSchema = z.object({
+  email: z.string().trim().min(1, 'Email is required').email('Enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+})
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const login = useLogin()
-  const [form, setForm] = useState({ username: '', password: '' })
   const from = location.state?.from?.pathname || '/dashboard'
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
 
-  const handleChange = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-
+  const onSubmit = async (values) => {
     try {
-      await login.mutateAsync(form)
-      toast.success('Welcome back')
+      await login.mutateAsync(values)
+      toast.success('Welcome back to VocabVerse')
       navigate(from, { replace: true })
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Unable to log in')
+      toast.error(error.message || 'Unable to log in')
     }
   }
+
+  const isLoading = isSubmitting || login.isPending
 
   return (
     <div className="mx-auto flex min-h-full max-w-xl flex-col justify-center py-8">
@@ -33,34 +48,39 @@ export default function LoginPage() {
       <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground">Continue your vocabulary streak</h1>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">Use your VocabVerse account to access collections, reviews, flashcards, and speaking practice.</p>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-        <div>
-          <label className="text-sm font-semibold text-foreground" htmlFor="username">Username or email</label>
+      <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <FormField id="email" label="Email" error={errors.email?.message}>
           <input
-            id="username"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            required
-            className="mt-2 h-12 w-full rounded-button border border-input bg-background px-4 text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
+            id="email"
+            type="email"
+            autoComplete="email"
+            disabled={isLoading}
+            className={formInputClass(Boolean(errors.email))}
             placeholder="learner@example.com"
+            aria-invalid={Boolean(errors.email)}
+            {...register('email')}
           />
-        </div>
-        <div>
-          <label className="text-sm font-semibold text-foreground" htmlFor="password">Password</label>
+        </FormField>
+
+        <FormField id="password" label="Password" error={errors.password?.message}>
           <input
             id="password"
-            name="password"
             type="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="mt-2 h-12 w-full rounded-button border border-input bg-background px-4 text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
+            autoComplete="current-password"
+            disabled={isLoading}
+            className={formInputClass(Boolean(errors.password))}
             placeholder="Enter your password"
+            aria-invalid={Boolean(errors.password)}
+            {...register('password')}
           />
+        </FormField>
+
+        <div className="rounded-2xl border border-border bg-muted/60 p-4 text-sm leading-6 text-muted-foreground">
+          Tokens are stored only in local auth state/local storage for the session foundation. They are never placed in URLs.
         </div>
-        <Button type="submit" size="lg" className="w-full" disabled={login.isPending}>
-          {login.isPending ? 'Signing in...' : 'Log in'}
+
+        <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Log in'}
         </Button>
       </form>
 
@@ -70,3 +90,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
