@@ -13,6 +13,7 @@ import ReviewPage from '@/pages/review/ReviewPage'
 import FlashcardsPage from '@/pages/flashcards/FlashcardsPage'
 import QuizPage from '@/pages/quiz/QuizPage'
 import TypingPage from '@/pages/typing/TypingPage'
+import PublicCollectionsPage from '@/pages/publicCollections/PublicCollectionsPage'
 import AiPage from '@/pages/ai/AiPage'
 import ShadowingPage from '@/pages/shadowing/ShadowingPage'
 import RoleplayPage from '@/pages/roleplay/RoleplayPage'
@@ -47,6 +48,8 @@ const router = createBrowserRouter([
               { path: 'flashcards', element: <FlashcardsPage /> },
               { path: 'quiz', element: <QuizPage /> },
               { path: 'typing', element: <TypingPage /> },
+              { path: 'public/collections', element: <PublicCollectionsPage /> },
+              { path: 'public/collections/:collectionId', element: <PublicCollectionsPage /> },
               { path: 'ai', element: <AiPage /> },
               { path: 'shadowing', element: <ShadowingPage /> },
               { path: 'roleplay', element: <RoleplayPage /> },

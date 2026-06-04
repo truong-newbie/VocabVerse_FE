@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   FiBookOpen,
+  FiGlobe,
   FiGrid,
   FiLayers,
   FiMessageCircle,
@@ -16,6 +17,7 @@ import { cn } from '../../utils/cn'
 const navigation = [
   { label: 'Dashboard', to: '/dashboard', icon: FiGrid },
   { label: 'Collections', to: '/collections', icon: FiLayers },
+  { label: 'Public Library', to: '/public/collections', icon: FiGlobe },
   { label: 'Vocabulary', to: '/vocabularies', icon: FiBookOpen },
   { label: 'Review Today', to: '/review', icon: FiRepeat },
   { label: 'Flashcards', to: '/flashcards', icon: FiZap },
