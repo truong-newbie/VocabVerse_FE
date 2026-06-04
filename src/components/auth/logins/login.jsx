@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import styles from './login.module.css'
 import {useNavigate} from 'react-router-dom';
+import {legacyApiUrl} from "../../../services/legacyApiUrl";
 
 function Login({onLogin}) {
     const [username, setUsername] = useState('');
@@ -11,7 +12,7 @@ function Login({onLogin}) {
     const handleSignIn = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8080/auth/login', {
+            const response = await fetch(legacyApiUrl('/auth/login'), {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({username, password}),

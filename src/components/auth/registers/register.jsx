@@ -1,6 +1,7 @@
 import {useNavigate} from 'react-router-dom';
 import {useState} from "react";
 import styles from './register.module.css'
+import {legacyApiUrl} from "../../../services/legacyApiUrl";
 
 function Register() {
     const [username, setUsername] = useState('');
@@ -13,7 +14,7 @@ function Register() {
     const handleSignUp = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8080/auth/register', {
+            const response = await fetch(legacyApiUrl('/auth/register'), {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({username, password, fullName, email}),

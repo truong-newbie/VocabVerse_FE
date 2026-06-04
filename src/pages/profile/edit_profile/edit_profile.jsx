@@ -2,6 +2,7 @@ import styles from './edit_profile.module.css';
 import {useEffect, useState} from "react";
 import {jwtDecode} from "jwt-decode";
 import axios from "axios";
+import {legacyApiUrl} from "../../../services/legacyApiUrl";
 
 function Edit_Profile() {
     const [userName, setUserName] = useState('');
@@ -39,7 +40,7 @@ function Edit_Profile() {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/user/id/${idFromToken}`, {
+            const response = await fetch(legacyApiUrl(`/user/id/${idFromToken}`), {
                 method: 'GET',
                 headers: {
                     "Authorization": "Bearer " + token
@@ -76,7 +77,7 @@ function Edit_Profile() {
         const idFromToken = await getIdByToken();
 
         try {
-            const response = await fetch('http://localhost:8080/user', {
+            const response = await fetch(legacyApiUrl('/user'), {
                 method: 'PUT',
                 headers: {
                     "Content-Type": "application/json",
@@ -117,7 +118,7 @@ function Edit_Profile() {
         formData.append("id", id);
 
         try {
-            const res = await axios.post("http://localhost:8080/user/upload_avatar", formData, {
+            const res = await axios.post(legacyApiUrl('/user/upload_avatar'), formData, {
                 headers: {
                     "Authorization": "Bearer " + token,
                     "Content-Type": "multipart/form-data"

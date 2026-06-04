@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { authStorage, useAuthStore } from '../app/store/authStore'
+import { authStorage, useAuthStore } from '@/app/store/authStore'
+import { normalizeApiError, unwrapApiResponse } from './apiError'
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -28,7 +29,7 @@ apiClient.interceptors.response.use(
     const refreshToken = authStorage.getRefreshToken()
 
     if (status !== 401 || !refreshToken || originalRequest?._retry) {
-      return Promise.reject(error)
+      return Promise.reject(normalizeApiError(error))
     }
 
     originalRequest._retry = true
@@ -38,7 +39,7 @@ apiClient.interceptors.response.use(
       const response = await refreshPromise
       refreshPromise = null
 
-      const payload = response.data?.result || response.data
+      const payload = unwrapApiResponse(response)
       const nextAccessToken = payload?.accessToken || payload?.token
       const nextRefreshToken = payload?.refreshToken || refreshToken
 
@@ -56,7 +57,7 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       refreshPromise = null
       useAuthStore.getState().logout()
-      return Promise.reject(refreshError)
+      return Promise.reject(normalizeApiError(refreshError))
     }
   },
 )

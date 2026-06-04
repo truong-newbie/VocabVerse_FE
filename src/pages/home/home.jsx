@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import styles from "./home.module.css"
 import { FaHeart, FaRegHeart, FaRegComment, FaRegBookmark } from 'react-icons/fa';
 import { FiSend } from 'react-icons/fi'; // Share
+import {legacyApiUrl} from "../../services/legacyApiUrl";
 
 
 function Home() {
@@ -16,7 +17,7 @@ function Home() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/user', {
+            const response = await fetch(legacyApiUrl('/user'), {
                 method: 'GET',
                 headers: {
                     "Authorization": "Bearer " + token

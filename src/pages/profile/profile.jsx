@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import styles from "./profile.module.css"
 import {jwtDecode} from 'jwt-decode';
+import {legacyApiUrl} from "../../services/legacyApiUrl";
 
 
 function Profile() {
@@ -66,7 +67,7 @@ function Profile() {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/user/id/${idFromToken}`, {
+            const response = await fetch(legacyApiUrl(`/user/id/${idFromToken}`), {
                 method: 'GET', headers: {
                     "Authorization": `Bearer ${token}`, "Content-Type": "application/json"
                 }
@@ -98,7 +99,7 @@ function Profile() {
         const idFromToken = await getIdByToken();
 
         try {
-            const response = await fetch(`http://localhost:8080/user/follow`, {
+            const response = await fetch(legacyApiUrl('/user/follow'), {
                 method: 'POST', headers: {
                     'Content-Type': 'application/json', "Authorization": "Bearer " + token
                 }, body: JSON.stringify({
@@ -123,7 +124,7 @@ function Profile() {
         const idFromToken = await getIdByToken();
 
         try {
-            const response = await fetch(`http://localhost:8080/user/unfollow`, {
+            const response = await fetch(legacyApiUrl('/user/unfollow'), {
                 method: 'POST', headers: {
                     'Content-Type': 'application/json', "Authorization": "Bearer " + token
                 }, body: JSON.stringify({
@@ -148,7 +149,7 @@ function Profile() {
         const idFromToken = await getIdByToken();
 
         try {
-            const response = await fetch(`http://localhost:8080/user/follow/check-follow?myId=${idFromToken}&targetId=${targetId}`, {
+            const response = await fetch(legacyApiUrl(`/user/follow/check-follow?myId=${idFromToken}&targetId=${targetId}`), {
                 method: 'GET', headers: {
                     "Authorization": "Bearer " + token
                 }
@@ -170,7 +171,7 @@ function Profile() {
         const userId = idFromAnother || id;
 
         try {
-            const response = await fetch(`http://localhost:8080/user/follow/show-follow?id=${userId}&isFollower=${isFollower}`, {
+            const response = await fetch(legacyApiUrl(`/user/follow/show-follow?id=${userId}&isFollower=${isFollower}`), {
                 method: 'GET', headers: {
                     "Authorization": "Bearer " + token
                 }

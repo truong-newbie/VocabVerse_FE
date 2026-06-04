@@ -2,6 +2,7 @@ import {NavLink, useNavigate} from "react-router-dom";
 import styles from './sidebar.module.css';
 import {FaHome, FaUser, FaSignOutAlt, FaSearch} from 'react-icons/fa';
 import {useEffect, useRef, useState} from 'react';
+import {legacyApiUrl} from "../services/legacyApiUrl";
 
 export default function Sidebar({onLogout}) {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1250);
@@ -27,7 +28,7 @@ export default function Sidebar({onLogout}) {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost:8080/user/search/${encodeURIComponent(value)}`, {
+                const response = await fetch(legacyApiUrl(`/user/search/${encodeURIComponent(value)}`), {
                     method: 'GET',
                     headers: {
                         "Authorization": "Bearer " + token

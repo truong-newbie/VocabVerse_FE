@@ -29,21 +29,34 @@ export const authStorage = {
 }
 
 export const useAuthStore = create((set) => ({
-  accessToken: readInitialAccessToken(),
-  refreshToken: authStorage.getRefreshToken(),
+  accessToken: null,
+  refreshToken: null,
   user: null,
-  isAuthenticated: Boolean(readInitialAccessToken()),
+  isAuthenticated: false,
+  isHydrated: false,
+  hydrate: () => {
+    const accessToken = authStorage.getAccessToken()
+    const refreshToken = authStorage.getRefreshToken()
+
+    set({
+      accessToken,
+      refreshToken,
+      isAuthenticated: Boolean(accessToken),
+      isHydrated: true,
+    })
+  },
   setTokens: ({ accessToken, refreshToken }) => {
     authStorage.setTokens({ accessToken, refreshToken })
     set({
       accessToken: accessToken || null,
       refreshToken: refreshToken || authStorage.getRefreshToken(),
       isAuthenticated: Boolean(accessToken),
+      isHydrated: true,
     })
   },
   setUser: (user) => set({ user }),
   logout: () => {
     authStorage.clear()
-    set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false })
+    set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false, isHydrated: true })
   },
 }))
