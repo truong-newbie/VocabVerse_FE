@@ -1,22 +1,29 @@
 export const PUBLIC_COLLECTION_PAGE_SIZE = 10
 
+function isPublicCollection(collection) {
+  return !collection?.visibility || String(collection.visibility).toUpperCase() === 'PUBLIC'
+}
+
 export function normalizePublicCollectionList(payload, fallbackSize = PUBLIC_COLLECTION_PAGE_SIZE) {
   if (Array.isArray(payload)) {
+    const publicItems = payload.filter(isPublicCollection)
     return {
-      items: payload,
-      totalItems: payload.length,
+      items: publicItems,
+      totalItems: publicItems.length,
       totalPages: 1,
       page: 0,
-      size: payload.length || fallbackSize,
+      size: publicItems.length || fallbackSize,
     }
   }
 
   const items = payload?.content || payload?.items || payload?.data || payload?.collections || []
-  const totalItems = Number(payload?.totalElements ?? payload?.totalItems ?? payload?.total ?? items.length)
+  const publicItems = items.filter(isPublicCollection)
+  const serverTotalItems = Number(payload?.totalElements ?? payload?.totalItems ?? payload?.total ?? items.length)
+  const totalItems = publicItems.length === items.length ? serverTotalItems : publicItems.length
   const size = Number(payload?.size ?? fallbackSize)
 
   return {
-    items,
+    items: publicItems,
     totalItems,
     totalPages: Number(payload?.totalPages ?? Math.max(1, Math.ceil(totalItems / size))),
     page: Number(payload?.number ?? payload?.page ?? 0),
@@ -43,15 +50,45 @@ export function getPublicVocabularyCount(collection) {
   )
 }
 
+function looksPrivateOwnerValue(value) {
+  if (!value || typeof value !== 'string') return true
+  const trimmed = value.trim()
+  if (!trimmed) return true
+  if (trimmed.includes('@')) return true
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed)) return true
+  return false
+}
+
 export function getPublicOwnerDisplayName(collection) {
-  if (collection?.ownerDisplayName) return collection.ownerDisplayName
-  if (typeof collection?.createdBy === 'string') return collection.createdBy
+  const directName =
+    collection?.ownerName ||
+    collection?.publisherName ||
+    collection?.authorName ||
+    collection?.ownerDisplayName ||
+    collection?.createdByName
+
+  if (!looksPrivateOwnerValue(directName)) return directName.trim()
+
+  if (typeof collection?.createdBy === 'string' && !looksPrivateOwnerValue(collection.createdBy)) return collection.createdBy.trim()
   const owner = collection?.owner || collection?.createdBy
-  return owner?.displayName || owner?.username || owner?.name || 'Public contributor'
+  const ownerName = owner?.displayName || owner?.fullName || owner?.username || owner?.name
+  return looksPrivateOwnerValue(ownerName) ? 'Public contributor' : ownerName.trim()
 }
 
 export function getPublicCloneCount(collection) {
   return Number(collection?.clonedCount ?? collection?.cloneCount ?? 0)
+}
+
+export function getClonedCollectionId(response) {
+  return (
+    response?.collectionId ??
+    response?.id ??
+    response?.collection?.id ??
+    response?.clonedCollection?.id ??
+    response?.data?.collectionId ??
+    response?.data?.id ??
+    null
+  )
 }
 
 export function formatPublicCollectionDate(value) {

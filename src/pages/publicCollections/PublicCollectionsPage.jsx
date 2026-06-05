@@ -25,6 +25,7 @@ import ResponsiveContentContainer from '@/components/common/ResponsiveContentCon
 import StatCard from '@/components/common/StatCard'
 import {
   formatPublicCollectionDate,
+  getClonedCollectionId,
   getPublicCloneCount,
   getPublicCollectionDescription,
   getPublicCollectionTitle,
@@ -116,7 +117,7 @@ function PublicCollectionCard({ collection, onClone, onOpen, isCloning }) {
           <FiCopy aria-hidden="true" /> {isCloning ? 'Cloning...' : 'Clone'}
         </Button>
         <Button variant="outline" onClick={onOpen} aria-label={`Open ${title}`}>
-          <FiExternalLink aria-hidden="true" /> Open
+          <FiExternalLink aria-hidden="true" /> Preview
         </Button>
       </div>
     </article>
@@ -127,6 +128,8 @@ function PublicVocabularyRow({ vocabulary }) {
   const term = getVocabularyTerm(vocabulary)
   const meaning = getVocabularyMeaning(vocabulary)
   const example = getVocabularyExample(vocabulary)
+  const vietnameseMeaning = vocabulary.vietnameseMeaning || vocabulary.meaningVi
+  const pronunciation = vocabulary.pronunciation || vocabulary.phonetic
 
   return (
     <article className="rounded-2xl border border-border bg-background/70 p-4">
@@ -136,9 +139,9 @@ function PublicVocabularyRow({ vocabulary }) {
             <h3 className="text-xl font-bold">{term}</h3>
             {vocabulary.partOfSpeech ? <Badge variant="primary">{vocabulary.partOfSpeech}</Badge> : null}
           </div>
-          {vocabulary.pronunciation ? <p className="mt-1 text-sm font-semibold text-primary">{vocabulary.pronunciation}</p> : null}
+          {pronunciation ? <p className="mt-1 text-sm font-semibold text-primary">{pronunciation}</p> : null}
           <p className="mt-2 text-base font-semibold text-foreground">{meaning}</p>
-          {vocabulary.vietnameseMeaning ? <p className="mt-1 text-sm text-muted-foreground">VI: {vocabulary.vietnameseMeaning}</p> : null}
+          {vietnameseMeaning ? <p className="mt-1 text-sm text-muted-foreground">VI: {vietnameseMeaning}</p> : null}
         </div>
         <Badge variant="muted">Public vocabulary</Badge>
       </div>
@@ -168,8 +171,12 @@ function PublicCollectionListPage() {
 
   const handleClone = async (collection) => {
     try {
-      await cloneMutation.mutateAsync(collection.id)
+      const response = await cloneMutation.mutateAsync(collection.id)
       toast.success('Collection cloned to your private library')
+      const clonedCollectionId = getClonedCollectionId(response)
+      if (clonedCollectionId) {
+        navigate(`/collections/${clonedCollectionId}`)
+      }
     } catch (error) {
       toast.error(error.message || 'Unable to clone public collection')
     }
@@ -180,7 +187,7 @@ function PublicCollectionListPage() {
   if (collectionsQuery.error) {
     return (
       <ResponsiveContentContainer className="space-y-8">
-        <PageHeader title="Public Collections" description="Browse public vocabulary collections shared by the community." />
+        <PageHeader title="Public Library" description="Discover vocabulary collections shared by other learners" />
         <ErrorFallback title="Unable to load public collections" description={collectionsQuery.error.message} onRetry={() => collectionsQuery.refetch()} />
       </ResponsiveContentContainer>
     )
@@ -192,8 +199,8 @@ function PublicCollectionListPage() {
     <ResponsiveContentContainer className="space-y-8">
       <PageHeader
         eyebrow="Public library"
-        title="Public Collections"
-        description="Discover shared vocabulary sets and clone useful collections into your own private library."
+        title="Public Library"
+        description="Discover vocabulary collections shared by other learners"
       />
 
       <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm">
@@ -201,7 +208,7 @@ function PublicCollectionListPage() {
           <div>
             <Badge variant="success"><span className="inline-flex items-center gap-1.5"><FiGlobe aria-hidden="true" /> Community marketplace</span></Badge>
             <h2 className="mt-4 text-3xl font-bold tracking-tight">Browse, preview, then clone</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Only safe public owner names are shown. Sensitive owner fields are intentionally not rendered.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Open a collection to preview vocabulary before saving a copy to your own library.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[480px]">
             <StatCard label="Public Sets" value={normalized.totalItems} icon={FiLayers} tone="primary" />
@@ -241,7 +248,7 @@ function PublicCollectionListPage() {
         <EmptyState
           icon={FiGlobe}
           title={search ? 'No public collections match your search' : 'No public collections available'}
-          description={search ? 'Try another keyword or clear the search box.' : 'Public collections will appear here when the backend returns shared vocabulary sets.'}
+          description={search ? 'Try another keyword or clear the search box.' : 'No public collections yet. When learners publish collections, they will appear here.'}
           action={search ? <Button onClick={() => setSearch('')}>Clear Search</Button> : null}
         />
       )}
@@ -272,8 +279,12 @@ function PublicCollectionDetailPage({ collectionId }) {
 
   const handleClone = async () => {
     try {
-      await cloneMutation.mutateAsync(collectionId)
+      const response = await cloneMutation.mutateAsync(collectionId)
       toast.success('Collection cloned to your private library')
+      const clonedCollectionId = getClonedCollectionId(response)
+      if (clonedCollectionId) {
+        navigate(`/collections/${clonedCollectionId}`)
+      }
     } catch (error) {
       toast.error(error.message || 'Unable to clone public collection')
     }
@@ -322,7 +333,7 @@ function PublicCollectionDetailPage({ collectionId }) {
           </Button>
         </div>
         <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
-          Cloning creates a copy in your account. If the backend follows the documented rule, the cloned collection becomes your own PRIVATE collection.
+          Clone this collection to save it to your own library.
         </div>
       </section>
 
