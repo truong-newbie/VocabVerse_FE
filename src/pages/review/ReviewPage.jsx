@@ -35,6 +35,7 @@ import {
 import {
   useLearningProgress,
   useReviewHistory,
+  useReviewStats,
   useSubmitReviewResult,
   useTodayReviews,
 } from '@/features/review/useReviews'
@@ -204,19 +205,22 @@ function ReviewHistoryList({ items }) {
 export default function ReviewPage() {
   const navigate = useNavigate()
   const todayQuery = useTodayReviews()
+  const statsQuery = useReviewStats()
   const historyQuery = useReviewHistory()
   const progressQuery = useLearningProgress()
   const submitMutation = useSubmitReviewResult()
 
-  const isLoading = todayQuery.isLoading || historyQuery.isLoading || progressQuery.isLoading
-  const firstError = todayQuery.error || historyQuery.error || progressQuery.error
+  const isLoading = todayQuery.isLoading || statsQuery.isLoading || historyQuery.isLoading || progressQuery.isLoading
+  const firstError = todayQuery.error || statsQuery.error || historyQuery.error || progressQuery.error
 
   const todayItems = normalizeTodayReviews(todayQuery.data)
   const historyItems = normalizeReviewHistory(historyQuery.data)
+  const stats = statsQuery.data || {}
   const progress = progressQuery.data || {}
 
   const handleRetry = () => {
     todayQuery.refetch()
+    statsQuery.refetch()
     historyQuery.refetch()
     progressQuery.refetch()
   }
@@ -242,10 +246,10 @@ export default function ReviewPage() {
   }
 
   const summaryStats = [
-    { label: 'Words Due', value: formatNumber(progress.dueTodayCount ?? todayItems.length), helper: 'Vocabulary waiting today', icon: FiCalendar, tone: 'warning' },
-    { label: 'Reviewed Today', value: formatNumber(progress.reviewedTodayCount), helper: 'Completed review actions', icon: FiCheckCircle, tone: 'success' },
-    { label: 'Current Streak', value: `${formatNumber(progress.currentStreak)} days`, helper: 'Consistency indicator', icon: FiZap, tone: 'primary' },
-    { label: 'Total Vocabulary', value: formatNumber(progress.totalVocabularies), helper: 'Tracked in learning progress', icon: FiBookOpen, tone: 'primary' },
+    { label: 'Words Due', value: formatNumber(stats.wordsDue ?? stats.dueTodayCount), helper: 'From review stats API', icon: FiCalendar, tone: 'warning' },
+    { label: 'Reviewed Today', value: formatNumber(stats.reviewedToday ?? stats.reviewedTodayCount), helper: 'Completed today', icon: FiCheckCircle, tone: 'success' },
+    { label: 'Current Streak', value: `${formatNumber(stats.currentStreak ?? stats.streak)} days`, helper: 'Consistency indicator', icon: FiZap, tone: 'primary' },
+    { label: 'Total Vocabulary', value: formatNumber(stats.totalVocabulary ?? stats.totalVocabularies), helper: 'Tracked vocabulary', icon: FiBookOpen, tone: 'primary' },
   ]
 
   return (

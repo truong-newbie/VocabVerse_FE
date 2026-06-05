@@ -25,6 +25,7 @@ import ErrorFallback from '@/components/common/ErrorFallback'
 import PageHeader from '@/components/common/PageHeader'
 import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
 import StatCard from '@/components/common/StatCard'
+import CollectionReviewSettingsCard from '@/features/review/components/CollectionReviewSettingsCard'
 import ImportVocabularyDialog from '@/features/vocabulary/components/ImportVocabularyDialog'
 import VocabularyFormDialog from '@/features/vocabulary/components/VocabularyFormDialog'
 import { formatCollectionDate, getCollectionTitle, getVocabularyCount } from '@/features/collection/collectionUtils'
@@ -385,6 +386,8 @@ export default function CollectionDetailPage() {
         <StatCard label="Visibility" value={visibility} icon={FiLayers} tone={visibility === 'PUBLIC' ? 'success' : 'warning'} />
         <StatCard label="PDF Export" value="Available" icon={FiFileText} tone="success" />
       </section>
+
+      <CollectionReviewSettingsCard collectionId={collectionId} />
 
       <section className="rounded-card border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
