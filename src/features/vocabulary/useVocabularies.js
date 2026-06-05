@@ -42,8 +42,11 @@ export function useCreateVocabulary() {
 
   return useMutation({
     mutationFn: vocabularyService.createVocabulary,
-    onSuccess: () => {
+    onSuccess: (vocabulary, variables) => {
       queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
+      if (variables?.collectionIds?.length) {
+        queryClient.invalidateQueries({ queryKey: ['collections'] })
+      }
     },
   })
 }

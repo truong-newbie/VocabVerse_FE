@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'))
 const CollectionsPage = lazy(() => import('@/pages/collections/CollectionsPage'))
+const CollectionDetailPage = lazy(() => import('@/pages/collections/CollectionDetailPage'))
 const VocabulariesPage = lazy(() => import('@/pages/vocabularies/VocabulariesPage'))
 const ReviewPage = lazy(() => import('@/pages/review/ReviewPage'))
 const FlashcardsPage = lazy(() => import('@/pages/flashcards/FlashcardsPage'))
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
             children: [
               { path: 'dashboard', element: withPageSuspense(<DashboardPage />) },
               { path: 'collections', element: withPageSuspense(<CollectionsPage />) },
+              { path: 'collections/:collectionId', element: withPageSuspense(<CollectionDetailPage />) },
               { path: 'vocabularies', element: withPageSuspense(<VocabulariesPage />) },
               { path: 'review', element: withPageSuspense(<ReviewPage />) },
               { path: 'flashcards', element: withPageSuspense(<FlashcardsPage />) },

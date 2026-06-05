@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FiAward,
@@ -215,9 +216,11 @@ function CompletionScreen({ summary, total, onRestart }) {
 }
 
 export default function FlashcardsPage() {
-  const [source, setSource] = useState('ALL')
-  const [collectionId, setCollectionId] = useState('')
-  const [sessionId, setSessionId] = useState(null)
+  const location = useLocation()
+  const initialSessionState = location.state || {}
+  const [source, setSource] = useState(initialSessionState.source || 'ALL')
+  const [collectionId, setCollectionId] = useState(initialSessionState.collectionId || '')
+  const [sessionId, setSessionId] = useState(initialSessionState.sessionId || null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [answered, setAnswered] = useState({})

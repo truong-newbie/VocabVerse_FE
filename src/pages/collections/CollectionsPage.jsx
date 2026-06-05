@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { FiBookOpen, FiChevronLeft, FiChevronRight, FiDownload, FiLayers, FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import { FiBookOpen, FiChevronLeft, FiChevronRight, FiLayers, FiPlus, FiSearch } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
@@ -9,11 +10,10 @@ import ErrorFallback from '@/components/common/ErrorFallback'
 import PageHeader from '@/components/common/PageHeader'
 import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
 import CollectionCard from '@/features/collection/components/CollectionCard'
-import { formatCollectionDate, getCollectionTitle, getVocabularyCount } from '@/features/collection/collectionUtils'
+import { getCollectionTitle } from '@/features/collection/collectionUtils'
 import CollectionFormDialog from '@/features/collection/components/CollectionFormDialog'
 import { useExportCollectionPdf } from '@/features/export/usePdfExport'
 import {
-  useCollection,
   useCollections,
   useCreateCollection,
   useDeleteCollection,
@@ -76,70 +76,13 @@ function CollectionsSkeleton() {
   )
 }
 
-function CollectionDetailDialog({ collectionId, onClose, onExport, isExporting }) {
-  const query = useCollection(collectionId, { enabled: Boolean(collectionId) })
-  const collection = query.data
-
-  if (!collectionId) return null
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation">
-      <section className="w-full max-w-2xl rounded-dialog border border-border bg-card p-6 text-card-foreground shadow-xl" role="dialog" aria-modal="true" aria-labelledby="collection-detail-title">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Collection detail</p>
-            <h2 id="collection-detail-title" className="mt-2 text-3xl font-semibold">{collection ? getCollectionTitle(collection) : 'Loading collection...'}</h2>
-          </div>
-          <Button variant="ghost" className="h-10 w-10 px-0" onClick={onClose} aria-label="Close collection detail"><FiX aria-hidden="true" /></Button>
-        </div>
-
-        {query.isLoading ? (
-          <div className="mt-6 space-y-3">
-            <div className="h-4 w-full animate-pulse rounded-full bg-muted" />
-            <div className="h-4 w-4/5 animate-pulse rounded-full bg-muted" />
-            <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-          </div>
-        ) : query.error ? (
-          <div className="mt-6">
-            <ErrorFallback title="Unable to open collection" description={query.error.message} onRetry={() => query.refetch()} />
-          </div>
-        ) : (
-          <div className="mt-6 space-y-5">
-            <p className="text-sm leading-6 text-muted-foreground">{collection.description || 'No description provided.'}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-background/70 p-4">
-                <p className="text-sm text-muted-foreground">Visibility</p>
-                <p className="mt-1 font-semibold">{collection.visibility || 'PRIVATE'}</p>
-              </div>
-              <div className="rounded-2xl border border-border bg-background/70 p-4">
-                <p className="text-sm text-muted-foreground">Vocabulary</p>
-                <p className="mt-1 font-semibold">{getVocabularyCount(collection)} words</p>
-              </div>
-              <div className="rounded-2xl border border-border bg-background/70 p-4">
-                <p className="text-sm text-muted-foreground">Updated</p>
-                <p className="mt-1 font-semibold">{formatCollectionDate(collection.updatedAt || collection.lastUpdated || collection.createdAt)}</p>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-dashed border-border bg-muted/50 p-4 text-sm leading-6 text-muted-foreground">
-              Vocabulary table and import flows are intentionally not implemented in this step.
-            </div>
-            <Button className="w-full" onClick={() => onExport(collection)} disabled={isExporting}>
-              <FiDownload aria-hidden="true" /> {isExporting ? 'Exporting collection PDF...' : 'Export collection PDF'}
-            </Button>
-          </div>
-        )}
-      </section>
-    </div>
-  )
-}
-
 export default function CollectionsPage() {
+  const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
   const [visibility, setVisibility] = useState('ALL')
   const [formState, setFormState] = useState({ open: false, mode: 'create', collection: null })
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [detailId, setDetailId] = useState(null)
 
   const collectionsQuery = useCollections({ page, size: PAGE_SIZE })
   const createMutation = useCreateCollection()
@@ -269,7 +212,7 @@ export default function CollectionsPage() {
             <CollectionCard
               key={collection.id}
               collection={collection}
-              onOpen={(item) => setDetailId(item.id)}
+              onOpen={(item) => navigate(`/collections/${item.id}`)}
               onEdit={openEditForm}
               onDelete={handleDeleteRequest}
               onExport={handleExportCollectionPdf}
@@ -302,7 +245,7 @@ export default function CollectionsPage() {
         <div className="rounded-card border border-border bg-card p-5 shadow-sm">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><FiBookOpen aria-hidden="true" /></div>
           <h2 className="mt-4 text-xl font-semibold">Detail and learning actions</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Open shows metadata now. Vocabulary import and CRUD are reserved for the next implementation step.</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Open a collection to manage its vocabulary list, export a PDF, or start flashcards, quiz, and typing practice from that collection.</p>
         </div>
         <div className="rounded-card border border-border bg-card p-5 shadow-sm lg:col-span-2">
           <h2 className="text-xl font-semibold">Security rules</h2>
@@ -330,12 +273,6 @@ export default function CollectionsPage() {
         onCancel={() => setDeleteTarget(null)}
       />
 
-      <CollectionDetailDialog
-        collectionId={detailId}
-        onClose={() => setDetailId(null)}
-        onExport={handleExportCollectionPdf}
-        isExporting={exportCollectionPdf.isPending}
-      />
     </ResponsiveContentContainer>
   )
 }
