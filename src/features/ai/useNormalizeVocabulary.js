@@ -6,3 +6,9 @@ export function useNormalizeVocabulary() {
     mutationFn: aiService.normalizeVocabulary,
   })
 }
+
+export function useNormalizeBulkVocabulary() {
+  return useMutation({
+    mutationFn: aiService.normalizeBulkVocabulary,
+  })
+}

@@ -15,6 +15,12 @@ import { formInputClass } from '@/components/forms/formStyles'
 import { getCollectionTitle } from '@/features/collection/collectionUtils'
 import { useCollections } from '@/features/collection/useCollections'
 import { useNormalizeVocabulary } from '@/features/ai/useNormalizeVocabulary'
+import {
+  getFriendlyAiError,
+  isValidAiVocabularyResult,
+  normalizeAiVocabularyResult,
+  normalizeStringList,
+} from '@/features/ai/aiUtils'
 import { useCreateVocabulary } from '@/features/vocabulary/useVocabularies'
 
 const normalizeSchema = z.object({
@@ -37,18 +43,29 @@ function normalizeCollectionList(payload) {
   return payload?.content || payload?.items || payload?.data || payload?.collections || []
 }
 
-function toArray(value) {
-  if (Array.isArray(value)) return value
-  if (!value) return []
-  if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean)
-  return []
-}
-
 function difficultyVariant(difficulty) {
   if (difficulty === 'EASY') return 'success'
   if (difficulty === 'HARD') return 'destructive'
   if (difficulty === 'MEDIUM') return 'warning'
   return 'secondary'
+}
+
+function FieldValue({ label, value, emptyLabel = 'Not returned' }) {
+  const isList = Array.isArray(value)
+  const hasValue = isList ? value.length > 0 : Boolean(value)
+
+  return (
+    <div className="rounded-2xl border border-border bg-background/70 p-4">
+      <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+      {isList ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {value.length ? value.map((item) => <Badge key={item} variant="secondary">{item}</Badge>) : <span className="text-sm text-muted-foreground">{emptyLabel}</span>}
+        </div>
+      ) : (
+        <p className={`mt-2 whitespace-pre-wrap font-semibold leading-7 ${hasValue ? 'text-foreground' : 'text-muted-foreground'}`}>{hasValue ? value : emptyLabel}</p>
+      )}
+    </div>
+  )
 }
 
 function AiProcessingSkeleton() {
@@ -73,60 +90,32 @@ function AiProcessingSkeleton() {
 }
 
 function AiSuggestionPreview({ result, onCopy }) {
-  const synonyms = toArray(result.synonyms)
-  const antonyms = toArray(result.antonyms)
-
   return (
     <article className="rounded-card border border-primary/25 bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">AI suggestion</p>
           <h2 className="mt-2 text-4xl font-bold tracking-tight">{result.term || 'Untitled term'}</h2>
-          {result.pronunciation ? <p className="mt-2 text-sm font-semibold text-primary">{result.pronunciation}</p> : null}
+          <p className="mt-2 text-sm font-semibold text-primary">{result.pronunciation || 'No pronunciation returned'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {result.partOfSpeech ? <Badge variant="primary">{result.partOfSpeech}</Badge> : null}
-          {result.difficulty ? <Badge variant={difficultyVariant(result.difficulty)}>{result.difficulty}</Badge> : null}
+          <Badge variant={result.partOfSpeech ? 'primary' : 'muted'}>{result.partOfSpeech || 'No part of speech'}</Badge>
+          <Badge variant={difficultyVariant(result.difficulty)}>{result.difficulty || 'No difficulty'}</Badge>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-background/70 p-4">
-          <p className="text-sm text-muted-foreground">Meaning</p>
-          <p className="mt-2 font-semibold leading-7">{result.meaning || 'No meaning returned'}</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-background/70 p-4">
-          <p className="text-sm text-muted-foreground">Vietnamese meaning</p>
-          <p className="mt-2 font-semibold leading-7">{result.vietnameseMeaning || 'No Vietnamese meaning returned'}</p>
-        </div>
+        <FieldValue label="term" value={result.term} />
+        <FieldValue label="meaning" value={result.meaning} />
+        <FieldValue label="vietnameseMeaning" value={result.vietnameseMeaning} />
+        <FieldValue label="pronunciation" value={result.pronunciation} />
+        <FieldValue label="partOfSpeech" value={result.partOfSpeech} />
+        <FieldValue label="exampleSentence" value={result.exampleSentence} />
+        <FieldValue label="synonyms" value={result.synonyms} emptyLabel="No synonyms returned" />
+        <FieldValue label="antonyms" value={result.antonyms} emptyLabel="No antonyms returned" />
+        <FieldValue label="difficulty" value={result.difficulty} />
+        <FieldValue label="aiExplanation" value={result.aiExplanation} />
       </div>
-
-      {result.exampleSentence ? (
-        <div className="mt-4 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground">
-          <span className="font-semibold text-foreground">Example: </span>{result.exampleSentence}
-        </div>
-      ) : null}
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-background/70 p-4">
-          <p className="text-sm font-semibold">Synonyms</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {synonyms.length ? synonyms.map((item) => <Badge key={item} variant="success">{item}</Badge>) : <span className="text-sm text-muted-foreground">None returned</span>}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-border bg-background/70 p-4">
-          <p className="text-sm font-semibold">Antonyms</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {antonyms.length ? antonyms.map((item) => <Badge key={item} variant="warning">{item}</Badge>) : <span className="text-sm text-muted-foreground">None returned</span>}
-          </div>
-        </div>
-      </div>
-
-      {result.aiExplanation ? (
-        <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-          <span className="font-semibold text-foreground">AI explanation: </span>{result.aiExplanation}
-        </div>
-      ) : null}
 
       <Button className="mt-5" variant="secondary" onClick={onCopy}>
         <FiClipboard aria-hidden="true" /> Copy result
@@ -135,8 +124,48 @@ function AiSuggestionPreview({ result, onCopy }) {
   )
 }
 
+function AiNormalizeErrorState({ error, onRetry }) {
+  const friendlyError = getFriendlyAiError(error)
+
+  return (
+    <ErrorFallback
+      title={friendlyError.title}
+      description={friendlyError.description}
+      onRetry={onRetry}
+    />
+  )
+}
+
+function AiNormalizeDebugPanel({ rawResponse, parsedResult }) {
+  if (!import.meta.env.DEV || (!rawResponse && !parsedResult)) return null
+
+  return (
+    <section className="rounded-card border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Development debug</p>
+          <h2 className="mt-2 text-2xl font-semibold">AI response inspector</h2>
+        </div>
+        <Badge variant="warning">Hidden in production</Badge>
+      </div>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div>
+          <p className="text-sm font-semibold text-muted-foreground">Raw AI Response</p>
+          <pre className="mt-2 max-h-96 overflow-auto rounded-2xl bg-muted p-4 text-xs text-foreground">{JSON.stringify(rawResponse, null, 2)}</pre>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-muted-foreground">Parsed JSON</p>
+          <pre className="mt-2 max-h-96 overflow-auto rounded-2xl bg-muted p-4 text-xs text-foreground">{JSON.stringify(parsedResult, null, 2)}</pre>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function AiPage() {
   const [aiResult, setAiResult] = useState(null)
+  const [rawAiResponse, setRawAiResponse] = useState(null)
+  const [aiError, setAiError] = useState(null)
   const normalizeMutation = useNormalizeVocabulary()
   const createVocabularyMutation = useCreateVocabulary()
   const collectionsQuery = useCollections({ page: 0, size: 100 })
@@ -164,8 +193,8 @@ export default function AiPage() {
   const noteValue = useMemo(() => {
     if (!aiResult) return ''
     const parts = []
-    if (toArray(aiResult.synonyms).length) parts.push(`Synonyms: ${toArray(aiResult.synonyms).join(', ')}`)
-    if (toArray(aiResult.antonyms).length) parts.push(`Antonyms: ${toArray(aiResult.antonyms).join(', ')}`)
+    if (normalizeStringList(aiResult.synonyms).length) parts.push(`Synonyms: ${normalizeStringList(aiResult.synonyms).join(', ')}`)
+    if (normalizeStringList(aiResult.antonyms).length) parts.push(`Antonyms: ${normalizeStringList(aiResult.antonyms).join(', ')}`)
     if (aiResult.difficulty) parts.push(`Difficulty: ${aiResult.difficulty}`)
     if (aiResult.aiExplanation) parts.push(`AI explanation: ${aiResult.aiExplanation}`)
     return parts.join('\n')
@@ -188,11 +217,22 @@ export default function AiPage() {
 
   const handleNormalize = async ({ rawText }) => {
     try {
-      const result = await normalizeMutation.mutateAsync(rawText.trim())
-      setAiResult(result)
+      setAiError(null)
+      setAiResult(null)
+      const rawResult = await normalizeMutation.mutateAsync(rawText.trim())
+      const parsedResult = normalizeAiVocabularyResult(rawResult)
+      setRawAiResponse(rawResult)
+      if (!isValidAiVocabularyResult(parsedResult)) {
+        const invalidResponseError = new Error('AI response did not include required term and meaning fields')
+        invalidResponseError.code = 'INVALID_AI_RESPONSE'
+        throw invalidResponseError
+      }
+      setAiResult(parsedResult)
       toast.success('AI suggestion is ready')
     } catch (error) {
-      toast.error(error.message || 'AI normalize failed')
+      setAiError(error)
+      const friendlyError = getFriendlyAiError(error)
+      toast.error(friendlyError.description)
     }
   }
 
@@ -210,13 +250,16 @@ export default function AiPage() {
 
   const handleSaveVocabulary = async (values) => {
     try {
+      const exampleSentence = values.exampleSentence?.trim()
       await createVocabularyMutation.mutateAsync({
-        term: values.term.trim(),
-        meaning: values.meaning.trim(),
-        pronunciation: values.pronunciation?.trim() || '',
+        word: values.term.trim(),
+        meaningEn: values.meaning.trim(),
+        phonetic: values.pronunciation?.trim() || '',
         partOfSpeech: values.partOfSpeech?.trim() || '',
-        exampleSentence: values.exampleSentence?.trim() || '',
-        vietnameseMeaning: values.vietnameseMeaning?.trim() || '',
+        meaningVi: values.vietnameseMeaning?.trim() || '',
+        examples: exampleSentence ? [{ sentence: exampleSentence, translation: '' }] : [],
+        synonyms: normalizeStringList(aiResult?.synonyms),
+        antonyms: normalizeStringList(aiResult?.antonyms),
         note: values.note?.trim() || '',
         collectionIds: values.collectionIds || [],
       })
@@ -228,6 +271,8 @@ export default function AiPage() {
 
   const handleReset = () => {
     setAiResult(null)
+    setRawAiResponse(null)
+    setAiError(null)
     normalizeMutation.reset()
     normalizeForm.reset({ rawText: '' })
     saveForm.reset({
@@ -244,6 +289,7 @@ export default function AiPage() {
 
   const isSaving = createVocabularyMutation.isPending
   const isProcessing = normalizeMutation.isPending
+  const displayError = aiError || normalizeMutation.error
 
   return (
     <ResponsiveContentContainer className="space-y-8">
@@ -288,15 +334,11 @@ export default function AiPage() {
         <div className="space-y-6">
           {isProcessing ? <AiProcessingSkeleton /> : null}
 
-          {normalizeMutation.error && !isProcessing ? (
-            <ErrorFallback
-              title="AI normalize failed"
-              description={normalizeMutation.error.message || 'The AI service is temporarily unavailable.'}
-              onRetry={normalizeForm.handleSubmit(handleNormalize)}
-            />
+          {displayError && !isProcessing ? (
+            <AiNormalizeErrorState error={displayError} onRetry={normalizeForm.handleSubmit(handleNormalize)} />
           ) : null}
 
-          {!aiResult && !isProcessing && !normalizeMutation.error ? (
+          {!aiResult && !isProcessing && !displayError ? (
             <EmptyState
               icon={FiZap}
               title="No AI suggestion yet"
@@ -308,6 +350,8 @@ export default function AiPage() {
           {aiResult ? <AiSuggestionPreview result={aiResult} onCopy={handleCopy} /> : null}
         </div>
       </section>
+
+      <AiNormalizeDebugPanel rawResponse={rawAiResponse} parsedResult={aiResult} />
 
       {aiResult ? (
         <section className="rounded-card border border-border bg-card p-6 shadow-sm">

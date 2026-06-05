@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button'
 import EmptyState from '@/components/common/EmptyState'
 import ErrorFallback from '@/components/common/ErrorFallback'
 import DashboardSection from '@/components/dashboard/DashboardSection'
-import { useNormalizeVocabulary } from '@/features/ai/useNormalizeVocabulary'
+import { extractAiVocabularyRows, getFriendlyAiError } from '@/features/ai/aiUtils'
+import { useNormalizeBulkVocabulary, useNormalizeVocabulary } from '@/features/ai/useNormalizeVocabulary'
 import { useBulkCreateCollectionVocabularies } from '@/features/vocabulary/useVocabularies'
 import {
   createEmptyVocabularyImportRow,
@@ -52,13 +53,6 @@ function persistGroqApiKey(value) {
   } catch {
     // localStorage may be unavailable in restricted browser contexts.
   }
-}
-
-function normalizeAiResult(payload) {
-  const source = payload?.vocabularies || payload?.items || payload?.rows || payload?.results || payload?.data || payload
-  if (Array.isArray(source)) return source.map(normalizeVocabularyImportRow)
-  if (source && typeof source === 'object') return [normalizeVocabularyImportRow(source)]
-  return []
 }
 
 function parseWordList(value) {
@@ -201,22 +195,37 @@ function AiNormalizeTab({
   rows,
   setRows,
   normalizeMutation,
+  normalizeBulkMutation,
   disabled,
 }) {
   const normalizeWithAi = async () => {
     try {
-      const result = await normalizeMutation.mutateAsync({
+      const payload = {
         rawText,
         ...(groqApiKey.trim() ? { groqApiKey: groqApiKey.trim() } : {}),
-      })
-      const nextRows = normalizeAiResult(result)
+      }
+      const shouldUseBulk = rawText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).length > 1
+      const result = shouldUseBulk
+        ? await normalizeBulkMutation.mutateAsync(payload)
+        : await normalizeMutation.mutateAsync(payload)
+      const nextRows = extractAiVocabularyRows(result).map((row) => ({
+        term: row.term,
+        meaning: row.meaning,
+        vietnameseMeaning: row.vietnameseMeaning,
+        pronunciation: row.pronunciation,
+        partOfSpeech: row.partOfSpeech,
+        exampleSentence: row.exampleSentence,
+        note: row.aiExplanation || '',
+      }))
       if (!nextRows.length) throw new Error('AI response did not include vocabulary rows')
       setRows(nextRows)
       toast.success(`${nextRows.length} AI-normalized rows ready`)
     } catch (error) {
-      toast.error(error.message || 'Unable to normalize vocabulary with AI')
+      toast.error(getFriendlyAiError(error).description)
     }
   }
+  const isNormalizing = normalizeMutation.isPending || normalizeBulkMutation.isPending
+  const normalizeError = normalizeMutation.error || normalizeBulkMutation.error
 
   return (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
@@ -227,19 +236,19 @@ function AiNormalizeTab({
         >
           <textarea
             value={rawText}
-            disabled={disabled || normalizeMutation.isPending}
+            disabled={disabled || isNormalizing}
             onChange={(event) => setRawText(event.target.value)}
             className="min-h-56 w-full rounded-button border border-input bg-background p-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
             placeholder={'abandon\nbenefit\nconsequence\nmaintain'}
           />
-          <Button className="mt-4 w-full" size="lg" onClick={normalizeWithAi} disabled={disabled || normalizeMutation.isPending || !rawText.trim()}>
-            <FiZap aria-hidden="true" /> {normalizeMutation.isPending ? 'Normalizing...' : 'Normalize With AI'}
+          <Button className="mt-4 w-full" size="lg" onClick={normalizeWithAi} disabled={disabled || isNormalizing || !rawText.trim()}>
+            <FiZap aria-hidden="true" /> {isNormalizing ? 'Normalizing...' : 'Normalize With AI'}
           </Button>
         </DashboardSection>
 
         <GroqApiKeyCard
           value={groqApiKey}
-          disabled={disabled || normalizeMutation.isPending}
+          disabled={disabled || isNormalizing}
           onChange={(value) => {
             setGroqApiKey(value)
             persistGroqApiKey(value)
@@ -250,12 +259,12 @@ function AiNormalizeTab({
       <DashboardSection
         title="AI Result Preview"
         description="Edit any cell before bulk creating vocabulary."
-        actions={normalizeMutation.isPending ? <Badge variant="warning">AI running</Badge> : <Badge variant={rows.length ? 'success' : 'muted'}>{rows.length} rows</Badge>}
+        actions={isNormalizing ? <Badge variant="warning">AI running</Badge> : <Badge variant={rows.length ? 'success' : 'muted'}>{rows.length} rows</Badge>}
       >
-        {normalizeMutation.error ? (
-          <ErrorFallback title="AI normalize failed" description={normalizeMutation.error.message} onRetry={normalizeWithAi} />
+        {normalizeError ? (
+          <ErrorFallback title={getFriendlyAiError(normalizeError).title} description={getFriendlyAiError(normalizeError).description} onRetry={normalizeWithAi} />
         ) : (
-          <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled || normalizeMutation.isPending} />
+          <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled || isNormalizing} />
         )}
       </DashboardSection>
     </div>
@@ -272,10 +281,11 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
   const [rows, setRows] = useState([])
   const [bulkProgress, setBulkProgress] = useState({ created: 0, total: 0 })
   const normalizeMutation = useNormalizeVocabulary()
+  const normalizeBulkMutation = useNormalizeBulkVocabulary()
   const bulkCreateMutation = useBulkCreateCollectionVocabularies()
 
   const validation = useMemo(() => getRowsValidation(rows), [rows])
-  const isBusy = normalizeMutation.isPending || bulkCreateMutation.isPending
+  const isBusy = normalizeMutation.isPending || normalizeBulkMutation.isPending || bulkCreateMutation.isPending
 
   if (!open) return null
 
@@ -382,6 +392,7 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
               rows={rows}
               setRows={setRows}
               normalizeMutation={normalizeMutation}
+              normalizeBulkMutation={normalizeBulkMutation}
               disabled={isBusy}
             />
           ) : null}
