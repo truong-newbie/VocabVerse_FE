@@ -410,7 +410,6 @@ export default function QuizPage() {
     try {
       const sessionResponse = await createSession.mutateAsync({
         source,
-        questionType,
         ...(source === 'COLLECTION' ? { collectionId } : {}),
       })
       const nextSessionId = getQuizSessionId(sessionResponse)

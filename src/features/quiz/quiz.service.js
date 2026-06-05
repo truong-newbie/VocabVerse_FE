@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const QUIZZES_BASE = '/api/v1/quizzes'
+const QUIZZES_BASE = '/quizzes'
 
 /**
  * @typedef {import('@/types/quiz').CreateQuizSessionRequest} CreateQuizSessionRequest

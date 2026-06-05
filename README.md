@@ -47,10 +47,10 @@ cp .env.example .env.local
 Required:
 
 ```text
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
-`VITE_API_BASE_URL` must be the backend origin only. Frontend services already include `/api/v1/...` paths.
+`VITE_API_BASE_URL` should include the backend context path `/api/v1`. Frontend services call paths such as `/auth/login` and `/collections`.
 
 ## Local Development
 
@@ -104,7 +104,7 @@ The frontend uses `src/services/apiClient.js` for all backend calls.
 
 - Base URL comes from `VITE_API_BASE_URL`.
 - Auth tokens are attached through Axios interceptors.
-- 401 responses attempt refresh through `/api/v1/auth/refresh`.
+- 401 responses attempt refresh through `/auth/refresh` relative to `VITE_API_BASE_URL`.
 - API envelopes are normalized through `unwrapApiResponse`.
 - Transport/backend errors are normalized through `normalizeApiError`.
 - PDF export uses blob responses and safe object URL downloads.
@@ -145,7 +145,7 @@ For Vercel, Netlify, or Cloudflare Pages:
 - `npm run typecheck` passes.
 - `npm run build` passes.
 - `.env.local` is not committed.
-- `VITE_API_BASE_URL` points to the deployed backend.
+- `VITE_API_BASE_URL` points to the deployed backend API root, for example `https://api.your-domain.com/api/v1`.
 - Backend CORS includes the deployed frontend origin.
 - Login, token refresh, logout, and protected routes are tested.
 - File/blob downloads are tested in the target browser.

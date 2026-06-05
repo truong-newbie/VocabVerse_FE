@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const PUBLIC_COLLECTIONS_BASE = '/api/v1/public/collections'
+const PUBLIC_COLLECTIONS_BASE = '/public/collections'
 
 /**
  * @typedef {import('@/types/publicCollection').PublicCollection} PublicCollection

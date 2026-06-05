@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+ï»¿import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -45,10 +45,10 @@ export default function VocabularyFormDialog({ open, mode = 'create', vocabulary
     reset({
       term: vocabulary ? getVocabularyTerm(vocabulary) : '',
       meaning: vocabulary ? getVocabularyMeaning(vocabulary) : '',
-      pronunciation: vocabulary?.pronunciation || '',
+      pronunciation: vocabulary?.pronunciation || vocabulary?.phonetic || '',
       partOfSpeech: vocabulary?.partOfSpeech || '',
       exampleSentence: vocabulary ? getVocabularyExample(vocabulary) : '',
-      vietnameseMeaning: vocabulary?.vietnameseMeaning || '',
+      vietnameseMeaning: vocabulary?.vietnameseMeaning || vocabulary?.meaningVi || '',
       note: vocabulary?.note || '',
       collectionIds: vocabulary ? getVocabularyCollectionIds(vocabulary) : [],
     })
@@ -60,14 +60,17 @@ export default function VocabularyFormDialog({ open, mode = 'create', vocabulary
   const description = mode === 'edit' ? 'Update this vocabulary entry and its collection links.' : 'Add a word or phrase for review, flashcards, and future practice modes.'
 
   const submit = (values) => {
+    const exampleSentence = values.exampleSentence?.trim()
+
     onSubmit({
-      term: values.term.trim(),
-      meaning: values.meaning.trim(),
-      pronunciation: values.pronunciation?.trim() || '',
+      word: values.term.trim(),
+      meaningEn: values.meaning.trim(),
+      phonetic: values.pronunciation?.trim() || '',
       partOfSpeech: values.partOfSpeech?.trim() || '',
-      exampleSentence: values.exampleSentence?.trim() || '',
-      vietnameseMeaning: values.vietnameseMeaning?.trim() || '',
-      note: values.note?.trim() || '',
+      meaningVi: values.vietnameseMeaning?.trim() || '',
+      examples: exampleSentence ? [{ sentence: exampleSentence, translation: '' }] : [],
+      synonyms: [],
+      antonyms: [],
       collectionIds: values.collectionIds || [],
     })
   }
@@ -87,7 +90,7 @@ export default function VocabularyFormDialog({ open, mode = 'create', vocabulary
             </FormField>
 
             <FormField id="vocabulary-pronunciation" label="Pronunciation" error={errors.pronunciation?.message}>
-              <input id="vocabulary-pronunciation" disabled={isSubmitting} className={formInputClass(Boolean(errors.pronunciation))} placeholder="/?'bænd?n/" aria-invalid={Boolean(errors.pronunciation)} {...register('pronunciation')} />
+              <input id="vocabulary-pronunciation" disabled={isSubmitting} className={formInputClass(Boolean(errors.pronunciation))} placeholder="/uh-ban-duhn/" aria-invalid={Boolean(errors.pronunciation)} {...register('pronunciation')} />
             </FormField>
           </div>
 
@@ -97,7 +100,7 @@ export default function VocabularyFormDialog({ open, mode = 'create', vocabulary
             </FormField>
 
             <FormField id="vocabulary-vietnamese" label="Vietnamese meaning" error={errors.vietnameseMeaning?.message}>
-              <input id="vocabulary-vietnamese" disabled={isSubmitting} className={formInputClass(Boolean(errors.vietnameseMeaning))} placeholder="t? b?" aria-invalid={Boolean(errors.vietnameseMeaning)} {...register('vietnameseMeaning')} />
+              <input id="vocabulary-vietnamese" disabled={isSubmitting} className={formInputClass(Boolean(errors.vietnameseMeaning))} placeholder="tu bo" aria-invalid={Boolean(errors.vietnameseMeaning)} {...register('vietnameseMeaning')} />
             </FormField>
           </div>
 

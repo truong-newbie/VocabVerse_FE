@@ -1,8 +1,8 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const REVIEWS_BASE = '/api/v1/reviews'
-const LEARNING_PROGRESS_BASE = '/api/v1/learning/progress'
+const REVIEWS_BASE = '/reviews'
+const LEARNING_PROGRESS_BASE = '/learning/progress'
 
 /**
  * @typedef {import('@/types/review').TodayReviewsResponse} TodayReviewsResponse

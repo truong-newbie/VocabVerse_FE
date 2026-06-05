@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const AI_VOCABULARY_BASE = '/api/v1/ai/vocabulary'
+const AI_VOCABULARY_BASE = '/ai/vocabulary'
 
 /**
  * @typedef {import('@/types/ai').NormalizeVocabularyResult} NormalizeVocabularyResult

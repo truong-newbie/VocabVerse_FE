@@ -1,4 +1,4 @@
-import {
+ï»¿import {
   FiBell,
   FiBookOpen,
   FiCalendar,
@@ -103,7 +103,7 @@ function ReviewDueList({ items, onReview }) {
           <div key={item.id || item.collectionId || title} className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold">{title}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{formatNumber(wordsDue)} words due · {formatDate(item.dueAt)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{formatNumber(wordsDue)} words due - {formatDate(item.dueAt)}</p>
             </div>
             <Button variant="secondary" onClick={onReview}>Review</Button>
           </div>
@@ -301,3 +301,4 @@ export default function DashboardPage() {
     </ResponsiveContentContainer>
   )
 }
+

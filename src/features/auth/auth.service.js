@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const AUTH_BASE = '/api/v1/auth'
+const AUTH_BASE = '/auth'
 
 export const authService = {
   async login(credentials) {
@@ -20,7 +20,7 @@ export const authService = {
   },
 
   async getCurrentUser() {
-    const response = await apiClient.get('/api/v1/users/me')
+    const response = await apiClient.get('/users/me')
     return unwrapApiResponse(response)
   },
 

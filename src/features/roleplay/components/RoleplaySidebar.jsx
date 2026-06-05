@@ -17,7 +17,7 @@ export default function RoleplaySidebar({ session }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-muted p-4">
             <p className="text-sm text-muted-foreground">Difficulty</p>
-            <div className="mt-2"><DifficultyBadge difficulty={session?.difficulty || 'Beginner'} /></div>
+            <div className="mt-2"><DifficultyBadge difficulty={session?.difficulty || 'EASY'} /></div>
           </div>
           <div className="rounded-2xl bg-muted p-4">
             <p className="text-sm text-muted-foreground">Persona</p>

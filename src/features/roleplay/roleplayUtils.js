@@ -1,7 +1,7 @@
 export const ROLEPLAY_PAGE_SIZE = 10
 
 export const roleplayTopics = ['Job Interview', 'Travel', 'Daily Conversation', 'Business Meeting', 'Restaurant', 'IELTS Speaking']
-export const roleplayDifficulties = ['Beginner', 'Intermediate', 'Advanced']
+export const roleplayDifficulties = ['EASY', 'MEDIUM', 'HARD']
 export const roleplayPersonas = ['Teacher', 'Interviewer', 'Friend', 'Customer', 'Manager']
 
 export function normalizeRoleplaySessionList(payload, fallbackSize = ROLEPLAY_PAGE_SIZE) {
@@ -33,7 +33,7 @@ export function getRoleplaySessionId(session) {
 
 export function getScenarioDescription(values) {
   const topic = values?.topic || 'Daily Conversation'
-  const difficulty = values?.difficulty || 'Beginner'
+  const difficulty = values?.difficulty || 'EASY'
   const persona = values?.persona || 'Teacher'
   return `Practice a ${difficulty.toLowerCase()} ${topic.toLowerCase()} conversation with an AI ${persona.toLowerCase()}. Focus on clear replies, natural phrasing, and learning from corrections.`
 }
@@ -90,8 +90,8 @@ export function getReportScore(report, session) {
 }
 
 export function getDifficultyTone(difficulty) {
-  if (difficulty === 'Advanced' || difficulty === 'Hard') return 'destructive'
-  if (difficulty === 'Intermediate' || difficulty === 'Medium') return 'warning'
+  if (difficulty === 'HARD') return 'destructive'
+  if (difficulty === 'MEDIUM') return 'warning'
   return 'success'
 }
 

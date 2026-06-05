@@ -3,10 +3,13 @@ export function getVocabularyTerm(vocabulary) {
 }
 
 export function getVocabularyMeaning(vocabulary) {
-  return vocabulary?.meaning || vocabulary?.vietnameseMeaning || 'No meaning yet'
+  return vocabulary?.meaning || vocabulary?.meaningEn || vocabulary?.vietnameseMeaning || vocabulary?.meaningVi || 'No meaning yet'
 }
 
 export function getVocabularyExample(vocabulary) {
+  if (Array.isArray(vocabulary?.examples) && vocabulary.examples[0]) {
+    return vocabulary.examples[0].sentence || vocabulary.examples[0].text || ''
+  }
   return vocabulary?.exampleSentence || vocabulary?.example || ''
 }
 

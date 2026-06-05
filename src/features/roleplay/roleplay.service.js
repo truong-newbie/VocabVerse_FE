@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const ROLEPLAY_BASE = '/api/v1/roleplay/sessions'
+const ROLEPLAY_BASE = '/roleplay/sessions'
 
 /**
  * @typedef {import('@/types/roleplay').CreateRoleplaySessionRequest} CreateRoleplaySessionRequest

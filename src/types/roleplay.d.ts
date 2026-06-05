@@ -1,6 +1,6 @@
 export type RoleplayTopic = 'Job Interview' | 'Travel' | 'Daily Conversation' | 'Business Meeting' | 'Restaurant' | 'IELTS Speaking' | string
 
-export type RoleplayDifficulty = 'Beginner' | 'Intermediate' | 'Advanced' | string
+export type RoleplayDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | string
 
 export type RoleplayPersona = 'Teacher' | 'Interviewer' | 'Friend' | 'Customer' | 'Manager' | string
 
