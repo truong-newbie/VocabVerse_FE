@@ -8,9 +8,13 @@ const AI_VOCABULARY_BASE = '/ai/vocabulary'
  */
 
 export const aiService = {
-  /** @param {string} rawText @returns {Promise<NormalizeVocabularyResult>} */
-  async normalizeVocabulary(rawText) {
-    const response = await apiClient.post(`${AI_VOCABULARY_BASE}/normalize`, { rawText })
+  /** @param {string | { rawText: string, groqApiKey?: string }} input @returns {Promise<NormalizeVocabularyResult>} */
+  async normalizeVocabulary(input) {
+    const payload = typeof input === 'string' ? { rawText: input } : input
+    const response = await apiClient.post(`${AI_VOCABULARY_BASE}/normalize`, {
+      rawText: payload.rawText,
+      ...(payload.groqApiKey ? { groqApiKey: payload.groqApiKey } : {}),
+    })
     return unwrapApiResponse(response)
   },
 }

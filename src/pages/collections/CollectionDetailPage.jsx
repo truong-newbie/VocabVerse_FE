@@ -14,6 +14,7 @@ import {
   FiTarget,
   FiTrash2,
   FiType,
+  FiUploadCloud,
   FiZap,
 } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
@@ -24,6 +25,7 @@ import ErrorFallback from '@/components/common/ErrorFallback'
 import PageHeader from '@/components/common/PageHeader'
 import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
 import StatCard from '@/components/common/StatCard'
+import ImportVocabularyDialog from '@/features/vocabulary/components/ImportVocabularyDialog'
 import VocabularyFormDialog from '@/features/vocabulary/components/VocabularyFormDialog'
 import { formatCollectionDate, getCollectionTitle, getVocabularyCount } from '@/features/collection/collectionUtils'
 import { useCollection } from '@/features/collection/useCollections'
@@ -219,6 +221,7 @@ export default function CollectionDetailPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [addExistingOpen, setAddExistingOpen] = useState(false)
   const [removeTarget, setRemoveTarget] = useState(null)
   const [startingMode, setStartingMode] = useState('')
@@ -390,10 +393,13 @@ export default function CollectionDetailPage() {
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Words inside this collection. Removing a word here only detaches it from this collection.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={() => setImportDialogOpen(true)}>
+              <FiUploadCloud aria-hidden="true" /> Import Vocabulary
+            </Button>
             <Button variant="secondary" onClick={() => setAddExistingOpen(true)}>
               <FiPlus aria-hidden="true" /> Add Existing
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
               <FiPlus aria-hidden="true" /> New Vocabulary
             </Button>
           </div>
@@ -418,8 +424,8 @@ export default function CollectionDetailPage() {
         <EmptyState
           icon={FiBookOpen}
           title="No vocabulary yet"
-          description="Create a new vocabulary entry or attach an existing one before starting flashcards, quiz, or typing practice."
-          action={<Button onClick={() => setCreateDialogOpen(true)}><FiPlus aria-hidden="true" /> Add vocabulary</Button>}
+          description="Import a word list and normalize it with AI, paste JSON, or create vocabulary manually before starting practice."
+          action={<Button onClick={() => setImportDialogOpen(true)}><FiUploadCloud aria-hidden="true" /> Import Vocabulary</Button>}
         />
       )}
 
@@ -442,6 +448,17 @@ export default function CollectionDetailPage() {
         isSubmitting={createVocabulary.isPending}
         onSubmit={handleCreateVocabulary}
         onClose={() => setCreateDialogOpen(false)}
+      />
+
+      <ImportVocabularyDialog
+        open={importDialogOpen}
+        collectionId={collectionId}
+        onClose={() => setImportDialogOpen(false)}
+        onImported={() => {
+          setPage(0)
+          vocabulariesQuery.refetch()
+          collectionQuery.refetch()
+        }}
       />
 
       <AddExistingVocabularyDialog

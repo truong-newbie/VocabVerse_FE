@@ -1,5 +1,6 @@
 export type NormalizeVocabularyRequest = {
   rawText: string
+  groqApiKey?: string
 }
 
 export type NormalizeVocabularyResult = {

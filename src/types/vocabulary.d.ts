@@ -54,4 +54,20 @@ export type CreateVocabularyRequest = {
   collectionIds?: Array<string | number>
 }
 
+export type BulkCreateVocabularyItem = CreateVocabularyRequest & {
+  note?: string
+}
+
+export type BulkCreateVocabularyRequest = {
+  vocabularies: BulkCreateVocabularyItem[]
+}
+
+export type BulkCreateVocabularyResponse = {
+  created?: number
+  failed?: number
+  items?: Vocabulary[]
+  vocabularies?: Vocabulary[]
+  errors?: Array<{ index?: number; message?: string }>
+} | Vocabulary[]
+
 export type UpdateVocabularyRequest = Partial<CreateVocabularyRequest>

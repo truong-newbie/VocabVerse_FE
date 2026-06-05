@@ -99,3 +99,16 @@ export function useRemoveVocabularyFromCollection() {
     },
   })
 }
+
+export function useBulkCreateCollectionVocabularies() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ collectionId, vocabularies }) => vocabularyService.bulkCreateCollectionVocabularies(collectionId, { vocabularies }),
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['collections'] })
+      queryClient.invalidateQueries({ queryKey: ['vocabularies', 'collection', variables.collectionId] })
+    },
+  })
+}
