@@ -5,7 +5,6 @@ export type QuizQuestionType = 'TERM_TO_MEANING' | 'MEANING_TO_TERM'
 export type CreateQuizSessionRequest = {
   source: QuizSessionSource
   collectionId?: string | number
-  questionType?: QuizQuestionType
 }
 
 export type QuizSession = {

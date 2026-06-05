@@ -1,8 +1,8 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const SHADOWING_BASE = '/api/v1/shadowing/lessons'
-const ADMIN_SHADOWING_BASE = '/api/v1/admin/shadowing/lessons'
+const SHADOWING_BASE = '/shadowing/lessons'
+const ADMIN_SHADOWING_BASE = '/admin/shadowing/lessons'
 
 /**
  * @typedef {import('@/types/shadowing').ShadowingLesson} ShadowingLesson

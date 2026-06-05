@@ -2,11 +2,16 @@ import axios from 'axios'
 import { authStorage, useAuthStore } from '@/app/store/authStore'
 import { normalizeApiError, unwrapApiResponse } from './apiError'
 
-const API_PREFIX = '/api/v1'
-const REFRESH_ENDPOINT = `${API_PREFIX}/auth/refresh`
+const REFRESH_ENDPOINT = '/auth/refresh'
+
+function normalizeApiBaseUrl(value) {
+  const rawBaseUrl = value || '/api/v1'
+  const trimmedBaseUrl = rawBaseUrl.replace(/\/+$/, '')
+  return trimmedBaseUrl.endsWith('/api/v1') ? trimmedBaseUrl : `${trimmedBaseUrl}/api/v1`
+}
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
   headers: {
     'Content-Type': 'application/json',
   },

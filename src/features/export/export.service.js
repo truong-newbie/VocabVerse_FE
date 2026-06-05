@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { getFilenameFromContentDisposition } from './downloadUtils'
 
-const EXPORT_BASE = '/api/v1/export'
+const EXPORT_BASE = '/export'
 
 /**
  * @typedef {import('@/types/export').PdfExportResponse} PdfExportResponse

@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const DASHBOARD_BASE = '/api/v1/dashboard'
+const DASHBOARD_BASE = '/dashboard'
 
 /**
  * @typedef {import('@/types/dashboard').DashboardSummary} DashboardSummary

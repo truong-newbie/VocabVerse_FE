@@ -1,8 +1,8 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const VOCABULARIES_BASE = '/api/v1/vocabularies'
-const COLLECTIONS_BASE = '/api/v1/collections'
+const VOCABULARIES_BASE = '/vocabularies'
+const COLLECTIONS_BASE = '/collections'
 
 /**
  * @typedef {import('@/types/vocabulary').Vocabulary} Vocabulary

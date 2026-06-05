@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const FLASHCARDS_BASE = '/api/v1/flashcards'
+const FLASHCARDS_BASE = '/flashcards'
 
 /**
  * @typedef {import('@/types/flashcard').CreateFlashcardSessionRequest} CreateFlashcardSessionRequest

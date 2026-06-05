@@ -102,7 +102,7 @@ function SessionHistory({ sessions, page, totalPages, onPageChange, onOpen }) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-semibold">{session.topic || 'Roleplay Session'}</h3>
-                      <DifficultyBadge difficulty={session.difficulty || 'Beginner'} />
+                      <DifficultyBadge difficulty={session.difficulty || 'EASY'} />
                       <Badge variant="secondary">{session.persona || 'Teacher'}</Badge>
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">Completed {formatRoleplayDate(session.completedAt || session.endedAt || session.updatedAt || session.createdAt)}</p>
@@ -144,7 +144,7 @@ function RoleplaySetupPage() {
     resolver: zodResolver(createSessionSchema),
     defaultValues: {
       topic: 'Job Interview',
-      difficulty: 'Beginner',
+      difficulty: 'EASY',
       persona: 'Interviewer',
     },
   })
@@ -195,7 +195,7 @@ function RoleplaySetupPage() {
                   >
                     <DifficultyBadge difficulty={difficulty} />
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      {difficulty === 'Beginner' ? 'Short, clear replies.' : difficulty === 'Intermediate' ? 'Natural everyday turns.' : 'Complex, high-pressure dialogue.'}
+                      {difficulty === 'EASY' ? 'Short, clear replies.' : difficulty === 'MEDIUM' ? 'Natural everyday turns.' : 'Complex, high-pressure dialogue.'}
                     </p>
                   </button>
                 ))}

@@ -1,7 +1,7 @@
 import { apiClient } from '@/services/apiClient'
 import { unwrapApiResponse } from '@/services/apiError'
 
-const TYPING_BASE = '/api/v1/typing'
+const TYPING_BASE = '/typing'
 
 /**
  * @typedef {import('@/types/typing').CreateTypingSessionRequest} CreateTypingSessionRequest
