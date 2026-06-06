@@ -9,6 +9,7 @@ import {
   FiPenTool,
   FiRepeat,
   FiSearch,
+  FiType,
   FiTarget,
   FiZap,
 } from 'react-icons/fi'
@@ -19,11 +20,12 @@ const navigation = [
   { label: 'Collections', to: '/collections', icon: FiLayers },
   { label: 'Public Library', to: '/public/collections', icon: FiGlobe },
   { label: 'Vocabulary', to: '/vocabularies', icon: FiBookOpen },
+  { label: 'Dictionary', to: '/dictionary', icon: FiSearch },
   { label: 'Review Today', to: '/review', icon: FiRepeat },
   { label: 'Flashcards', to: '/flashcards', icon: FiZap },
   { label: 'Quiz', to: '/quiz', icon: FiTarget },
-  { label: 'Typing', to: '/typing', icon: FiPenTool },
-  { label: 'AI Coach', to: '/ai', icon: FiSearch },
+  { label: 'Typing', to: '/typing', icon: FiType },
+  { label: 'AI Coach', to: '/ai', icon: FiPenTool },
   { label: 'Shadowing', to: '/shadowing', icon: FiMic },
   { label: 'Roleplay', to: '/roleplay', icon: FiMessageCircle },
 ]
