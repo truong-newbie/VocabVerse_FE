@@ -10,6 +10,7 @@ export const adminQueryKeys = {
   publicCollectionVocabulary: (id, params) => ['admin', 'public-collections', id, 'vocabularies', params],
   shadowingLessons: (params) => ['admin', 'shadowing', 'lessons', params],
   shadowingStatus: (id) => ['admin', 'shadowing', 'status', id],
+  shadowingSubtitles: (id) => ['admin', 'shadowing', 'lessons', id, 'subtitles'],
   notifications: (params) => ['admin', 'notifications', params],
   systemHealth: () => ['admin', 'system', 'health'],
 }
@@ -93,20 +94,77 @@ export function useAdminUploadShadowingLesson() {
   })
 }
 
-export function useAdminCreateYoutubeShadowingLesson() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: adminService.createYoutubeShadowingLesson,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.all }),
-  })
-}
-
 export function useAdminShadowingProcessingStatus(lessonId, options = {}) {
   return useQuery({
     queryKey: adminQueryKeys.shadowingStatus(lessonId),
     queryFn: () => adminService.getShadowingProcessingStatus(lessonId),
     enabled: Boolean(lessonId) && (options.enabled ?? true),
     refetchInterval: (query) => (query.state.data?.status === 'PROCESSING' ? 5000 : false),
+  })
+}
+
+export function useAdminShadowingSubtitles(lessonId, options = {}) {
+  return useQuery({
+    queryKey: adminQueryKeys.shadowingSubtitles(lessonId),
+    queryFn: () => adminService.getShadowingSubtitles(lessonId),
+    enabled: Boolean(lessonId) && (options.enabled ?? true),
+    staleTime,
+  })
+}
+
+export function useCreateAdminShadowingSubtitle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lessonId, payload }) => adminService.createShadowingSubtitle(lessonId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingSubtitles(variables.lessonId) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingLessons({}) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all })
+    },
+  })
+}
+
+export function useUpdateAdminShadowingSubtitle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lessonId, subtitleId, payload }) => adminService.updateShadowingSubtitle(lessonId, subtitleId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingSubtitles(variables.lessonId) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all })
+    },
+  })
+}
+
+export function useDeleteAdminShadowingSubtitle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lessonId, subtitleId }) => adminService.deleteShadowingSubtitle(lessonId, subtitleId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingSubtitles(variables.lessonId) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all })
+    },
+  })
+}
+
+export function useImportAdminShadowingSubtitles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lessonId, payload }) => adminService.importShadowingSubtitles(lessonId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingSubtitles(variables.lessonId) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all })
+    },
+  })
+}
+
+export function useGenerateAiAdminShadowingSubtitles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lessonId }) => adminService.generateAiShadowingSubtitles(lessonId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.shadowingSubtitles(variables.lessonId) })
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all })
+    },
   })
 }
 

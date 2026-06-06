@@ -15,7 +15,6 @@ export const adminService = {
         page: params.page ?? 0,
         size: params.size ?? 10,
         search: params.search || undefined,
-        q: params.search || undefined,
       },
     })
     return unwrapApiResponse(response)
@@ -93,14 +92,37 @@ export const adminService = {
     if (payload.title) formData.append('title', payload.title)
     if (payload.description) formData.append('description', payload.description)
 
-    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/upload`, formData)
     return unwrapApiResponse(response)
   },
 
-  async createYoutubeShadowingLesson(payload) {
-    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/youtube`, payload)
+  async getShadowingSubtitles(lessonId) {
+    const response = await apiClient.get(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles`)
+    return unwrapApiResponse(response)
+  },
+
+  async createShadowingSubtitle(lessonId, payload) {
+    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles`, payload)
+    return unwrapApiResponse(response)
+  },
+
+  async updateShadowingSubtitle(lessonId, subtitleId, payload) {
+    const response = await apiClient.put(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles/${subtitleId}`, payload)
+    return unwrapApiResponse(response)
+  },
+
+  async deleteShadowingSubtitle(lessonId, subtitleId) {
+    const response = await apiClient.delete(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles/${subtitleId}`)
+    return unwrapApiResponse(response)
+  },
+
+  async importShadowingSubtitles(lessonId, payload) {
+    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles/import`, payload)
+    return unwrapApiResponse(response)
+  },
+
+  async generateAiShadowingSubtitles(lessonId) {
+    const response = await apiClient.post(`${ADMIN_BASE}/shadowing/lessons/${lessonId}/subtitles/generate-ai`)
     return unwrapApiResponse(response)
   },
 

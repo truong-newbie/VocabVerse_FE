@@ -51,7 +51,7 @@ export default function AppSidebar({ mobileOpen = false, onNavigate }) {
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-sm font-black text-primary-foreground shadow-sm">VV</span>
           <div>
             <p className="text-lg font-bold leading-none">VocabVerse</p>
-            <p className="mt-1 text-xs font-medium text-muted-foreground">Learn with rhythm</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">Learn with VocabVerse</p>
           </div>
         </NavLink>
 
