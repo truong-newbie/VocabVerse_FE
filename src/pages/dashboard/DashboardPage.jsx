@@ -8,6 +8,7 @@
   FiLayers,
   FiPlus,
   FiRepeat,
+  FiShield,
   FiTarget,
   FiTrendingUp,
   FiZap,
@@ -21,6 +22,7 @@ import ErrorFallback from '@/components/common/ErrorFallback'
 import PageHeader from '@/components/common/PageHeader'
 import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
 import StatCard from '@/components/common/StatCard'
+import { useAuthStore } from '@/app/store/authStore'
 import {
   useDashboardSummary,
   useLearningStatusStats,
@@ -180,6 +182,7 @@ function LearningStatusChart({ values }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const user = useAuthStore((state) => state.user)
   const summaryQuery = useDashboardSummary()
   const statusQuery = useLearningStatusStats()
   const reviewDueQuery = useReviewDue()
@@ -217,6 +220,7 @@ export default function DashboardPage() {
   const recentReviewHistory = pickArray(activityPayload, 'reviewHistory', 'recentActivity', 'items')
   const recentNotifications = pickArray(activityPayload, 'notifications')
   const activityItems = recentNotifications.length ? recentNotifications : recentReviewHistory
+  const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN'
 
   const dashboardStats = [
     { label: 'Total Vocabularies', value: formatNumber(summary.totalVocabularies ?? summary.totalVocabulary ?? summary.totalWords), helper: 'Words available to study', icon: FiBookOpen, tone: 'primary' },
@@ -243,6 +247,11 @@ export default function DashboardPage() {
         description="Track your learning progress and stay consistent. Start with due reviews, then move into focused practice."
         actions={
           <>
+            {isAdmin ? (
+              <Button variant="secondary" onClick={() => navigate('/admin/dashboard')}>
+                <FiShield aria-hidden="true" /> Admin Portal
+              </Button>
+            ) : null}
             <Button onClick={() => navigate('/review')}><FiCalendar aria-hidden="true" /> Review today</Button>
             <Button variant="secondary" onClick={() => navigate('/vocabularies')}><FiBookOpen aria-hidden="true" /> Add vocabulary</Button>
             <Button variant="outline" onClick={() => navigate('/collections')}><FiLayers aria-hidden="true" /> Create collection</Button>

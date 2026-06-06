@@ -92,6 +92,7 @@ const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               { index: true, element: withPageSuspense(<AdminDashboardPage />) },
+              { path: 'dashboard', element: withPageSuspense(<AdminDashboardPage />) },
               { path: 'users', element: withPageSuspense(<AdminUsersPage />) },
               { path: 'collections', element: withPageSuspense(<AdminCollectionsPage />) },
               { path: 'public-collections', element: withPageSuspense(<AdminPublicCollectionsPage />) },

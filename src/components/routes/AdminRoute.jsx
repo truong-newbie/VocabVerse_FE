@@ -15,7 +15,7 @@ export default function AdminRoute() {
   const currentUserQuery = useCurrentUser()
   const user = currentUserQuery.data || userFromStore
 
-  if (!isHydrated || (isAuthenticated && currentUserQuery.isLoading && !userFromStore)) {
+  if (!isHydrated || (isAuthenticated && currentUserQuery.isLoading)) {
     return <LoadingScreen title="Checking admin access..." description="Verifying account permissions." />
   }
 

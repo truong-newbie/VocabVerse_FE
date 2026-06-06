@@ -17,7 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const login = useLogin()
-  const from = location.state?.from?.pathname || '/dashboard'
+  const from = location.state?.from?.pathname
   const {
     register,
     handleSubmit,
@@ -32,9 +32,14 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     try {
-      await login.mutateAsync(values)
+      const user = await login.mutateAsync(values)
+      const role = String(user?.role || '').toUpperCase()
+      const targetPath = role === 'ADMIN'
+        ? (from?.startsWith('/admin') ? from : '/admin/dashboard')
+        : (from && !from.startsWith('/admin') ? from : '/dashboard')
+
       toast.success('Welcome back to VocabVerse')
-      navigate(from, { replace: true })
+      navigate(targetPath, { replace: true })
     } catch (error) {
       toast.error(error.message || 'Unable to log in')
     }

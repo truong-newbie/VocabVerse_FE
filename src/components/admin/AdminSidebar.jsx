@@ -3,7 +3,7 @@ import { FiActivity, FiBell, FiDatabase, FiGrid, FiLayers, FiShield, FiUsers, Fi
 import { cn } from '@/utils/cn'
 
 const adminNavigation = [
-  { label: 'Overview', to: '/admin', icon: FiGrid, end: true },
+  { label: 'Overview', to: '/admin/dashboard', icon: FiGrid },
   { label: 'Users', to: '/admin/users', icon: FiUsers },
   { label: 'Collections', to: '/admin/collections', icon: FiLayers },
   { label: 'Public Collections', to: '/admin/public-collections', icon: FiShield },
@@ -33,8 +33,8 @@ export default function AdminSidebar() {
               cn(
                 'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition',
                 isActive
-                  ? 'bg-white text-slate-950 shadow-lg shadow-white/10'
-                  : 'text-slate-400 hover:bg-white/7 hover:text-white',
+                  ? 'border border-cyan-300/25 bg-cyan-300/15 text-cyan-100 shadow-lg shadow-cyan-950/30'
+                  : 'border border-transparent text-slate-400 hover:border-blue-300/20 hover:bg-blue-400/10 hover:text-blue-100',
               )
             }
           >
