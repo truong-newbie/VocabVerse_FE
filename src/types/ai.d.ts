@@ -1,6 +1,8 @@
 export type NormalizeVocabularyRequest = {
   rawText: string
   groqApiKey?: string
+  userApiKey?: string
+  provider?: 'GROQ' | string
 }
 
 export type NormalizeVocabularyResult = {
@@ -22,7 +24,11 @@ export type NormalizeVocabularyResult = {
   explanation?: string
 }
 
-export type NormalizeBulkVocabularyRequest = NormalizeVocabularyRequest
+export type NormalizeBulkVocabularyRequest = {
+  rawText: string
+  provider: 'GROQ' | string
+  userApiKey?: string
+}
 
 export type NormalizeBulkVocabularyResult = {
   vocabularies?: NormalizeVocabularyResult[]

@@ -104,7 +104,7 @@ export function useBulkCreateCollectionVocabularies() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ collectionId, vocabularies }) => vocabularyService.bulkCreateCollectionVocabularies(collectionId, { vocabularies }),
+    mutationFn: ({ collectionId, items, vocabularies }) => vocabularyService.bulkCreateCollectionVocabularies(collectionId, { items: items || vocabularies || [] }),
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: ['collections'] })

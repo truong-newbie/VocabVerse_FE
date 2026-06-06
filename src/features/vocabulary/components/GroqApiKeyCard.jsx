@@ -1,7 +1,5 @@
 import { FiExternalLink, FiKey } from 'react-icons/fi'
 
-export const GROQ_API_KEY_STORAGE_KEY = 'vocabverse.groqApiKey'
-
 export default function GroqApiKeyCard({ value, onChange, disabled }) {
   return (
     <section className="rounded-card border border-border bg-muted/45 p-4">
@@ -13,8 +11,7 @@ export default function GroqApiKeyCard({ value, onChange, disabled }) {
           <div>
             <h3 className="font-semibold">Use your own Groq API key</h3>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Use your own Groq API key for faster AI processing and to avoid shared system limits.
-              Your API key is only used for the current AI request and is never stored on our servers.
+              Paste a Groq key from your account. The key is kept only in memory while this dialog is open and is sent only to the VocabVerse backend normalize-bulk endpoint.
             </p>
           </div>
         </div>
@@ -38,7 +35,7 @@ export default function GroqApiKeyCard({ value, onChange, disabled }) {
         placeholder="gsk_..."
         className="mt-2 h-12 w-full rounded-button border border-input bg-background px-4 text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
       />
-      <p className="mt-2 text-xs text-muted-foreground">Stored in this browser only via localStorage. Sent only with AI normalize requests.</p>
+      <p className="mt-2 text-xs text-muted-foreground">Not saved to localStorage. Do not share this key with other users.</p>
     </section>
   )
 }

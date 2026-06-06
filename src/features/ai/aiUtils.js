@@ -107,7 +107,14 @@ export function getFriendlyAiError(error) {
     }
   }
 
-  if (code.includes('INVALID') || lowerMessage.includes('invalid response') || lowerMessage.includes('did not include')) {
+  if (code.includes('INVALID_INPUT')) {
+    return {
+      title: 'Invalid input',
+      description: 'Check that raw text, Groq API key, and vocabulary fields are valid before retrying.',
+    }
+  }
+
+  if (code.includes('RESPONSE_INVALID') || lowerMessage.includes('invalid response') || lowerMessage.includes('did not include')) {
     return {
       title: 'AI returned an invalid response',
       description: 'The backend response could not be parsed into vocabulary fields. Retry or inspect the debug panel in development.',

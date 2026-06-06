@@ -7,7 +7,7 @@ import EmptyState from '@/components/common/EmptyState'
 import ErrorFallback from '@/components/common/ErrorFallback'
 import DashboardSection from '@/components/dashboard/DashboardSection'
 import { extractAiVocabularyRows, getFriendlyAiError } from '@/features/ai/aiUtils'
-import { useNormalizeBulkVocabulary, useNormalizeVocabulary } from '@/features/ai/useNormalizeVocabulary'
+import { useNormalizeBulkVocabulary } from '@/features/ai/useNormalizeVocabulary'
 import { useBulkCreateCollectionVocabularies } from '@/features/vocabulary/useVocabularies'
 import {
   createEmptyVocabularyImportRow,
@@ -15,7 +15,7 @@ import {
   mapImportRowToCreateRequest,
   normalizeVocabularyImportRow,
 } from '@/features/vocabulary/vocabularyImportUtils'
-import GroqApiKeyCard, { GROQ_API_KEY_STORAGE_KEY } from './GroqApiKeyCard'
+import GroqApiKeyCard from './GroqApiKeyCard'
 import VocabularyPreviewTable from './VocabularyPreviewTable'
 
 const tabs = [
@@ -38,29 +38,16 @@ const sampleRows = [
 
 const sampleJson = JSON.stringify(sampleRows, null, 2)
 
-function getInitialGroqApiKey() {
-  try {
-    return localStorage.getItem(GROQ_API_KEY_STORAGE_KEY) || ''
-  } catch {
-    return ''
-  }
-}
-
-function persistGroqApiKey(value) {
-  try {
-    if (value) localStorage.setItem(GROQ_API_KEY_STORAGE_KEY, value)
-    else localStorage.removeItem(GROQ_API_KEY_STORAGE_KEY)
-  } catch {
-    // localStorage may be unavailable in restricted browser contexts.
-  }
-}
-
 function parseWordList(value) {
   return value
-    .split(/\r?\n/)
+    .split(/[\r\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean)
     .map((term) => ({ ...createEmptyVocabularyImportRow(), term }))
+}
+
+function parseRawTerms(value) {
+  return value.split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean)
 }
 
 function getRowsValidation(rows) {
@@ -85,6 +72,21 @@ function downloadJson(filename, rows) {
   anchor.click()
   anchor.remove()
   window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
+}
+
+function normalizeBulkCreateResult(payload, fallbackTotal = 0) {
+  const failedItems = payload?.failedItems || payload?.errors || []
+  const normalizedFailedItems = failedItems.map((item, index) => ({
+    row: item.row ?? item.index ?? index + 1,
+    term: item.term || item.word || '',
+    reason: item.reason || item.message || 'Failed to save this row',
+  }))
+
+  return {
+    successCount: payload?.successCount ?? payload?.created ?? payload?.createdCount ?? Math.max(0, fallbackTotal - normalizedFailedItems.length),
+    failedCount: payload?.failedCount ?? payload?.failed ?? payload?.failedItems?.length ?? normalizedFailedItems.length,
+    failedItems: normalizedFailedItems,
+  }
 }
 
 function JsonImportTab({ jsonText, setJsonText, rows, setRows, error, setError, disabled }) {
@@ -178,7 +180,7 @@ function WordListImportTab({ wordListText, setWordListText, rows, setRows, onSen
 
       <DashboardSection
         title="Word Preview"
-        description="Raw word rows need meanings before Create All is enabled. AI Normalize is the fastest path."
+        description="Raw word rows need meanings before Add all to collection is enabled. AI Normalize is the fastest path."
         actions={<Badge variant={rows.length ? 'warning' : 'muted'}>{rows.length} rows</Badge>}
       >
         <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled} />
@@ -194,20 +196,32 @@ function AiNormalizeTab({
   setGroqApiKey,
   rows,
   setRows,
-  normalizeMutation,
   normalizeBulkMutation,
   disabled,
 }) {
   const normalizeWithAi = async () => {
     try {
-      const payload = {
-        rawText,
-        ...(groqApiKey.trim() ? { groqApiKey: groqApiKey.trim() } : {}),
+      const rawTerms = parseRawTerms(rawText)
+      if (!rawTerms.length) {
+        toast.error('Enter at least one English word')
+        return
       }
-      const shouldUseBulk = rawText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean).length > 1
-      const result = shouldUseBulk
-        ? await normalizeBulkMutation.mutateAsync(payload)
-        : await normalizeMutation.mutateAsync(payload)
+      if (!groqApiKey.trim()) {
+        toast.error('Enter your Groq API key before running AI Normalize')
+        return
+      }
+      const oversizedTerm = rawTerms.find((term) => term.length > 150)
+      if (oversizedTerm) {
+        toast.error(`"${oversizedTerm.slice(0, 40)}..." is longer than 150 characters`)
+        return
+      }
+
+      const payload = {
+        rawText: rawText.trim(),
+        provider: 'GROQ',
+        userApiKey: groqApiKey.trim(),
+      }
+      const result = await normalizeBulkMutation.mutateAsync(payload)
       const nextRows = extractAiVocabularyRows(result).map((row) => ({
         term: row.term,
         meaning: row.meaning,
@@ -224,15 +238,15 @@ function AiNormalizeTab({
       toast.error(getFriendlyAiError(error).description)
     }
   }
-  const isNormalizing = normalizeMutation.isPending || normalizeBulkMutation.isPending
-  const normalizeError = normalizeMutation.error || normalizeBulkMutation.error
+  const isNormalizing = normalizeBulkMutation.isPending
+  const normalizeError = normalizeBulkMutation.error
 
   return (
     <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-5">
         <DashboardSection
           title="Normalize With AI"
-          description="Paste raw words, phrases, or messy notes. Review the AI result before saving."
+          description="Paste English words separated by new lines or commas. Review and edit the AI result before saving."
         >
           <textarea
             value={rawText}
@@ -246,19 +260,12 @@ function AiNormalizeTab({
           </Button>
         </DashboardSection>
 
-        <GroqApiKeyCard
-          value={groqApiKey}
-          disabled={disabled || isNormalizing}
-          onChange={(value) => {
-            setGroqApiKey(value)
-            persistGroqApiKey(value)
-          }}
-        />
+        <GroqApiKeyCard value={groqApiKey} disabled={disabled || isNormalizing} onChange={setGroqApiKey} />
       </div>
 
       <DashboardSection
         title="AI Result Preview"
-        description="Edit any cell before bulk creating vocabulary."
+        description="AI can be wrong. Review every row before adding it to the collection."
         actions={isNormalizing ? <Badge variant="warning">AI running</Badge> : <Badge variant={rows.length ? 'success' : 'muted'}>{rows.length} rows</Badge>}
       >
         {normalizeError ? (
@@ -277,15 +284,15 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
   const [jsonError, setJsonError] = useState('')
   const [wordListText, setWordListText] = useState('')
   const [aiRawText, setAiRawText] = useState('')
-  const [groqApiKey, setGroqApiKey] = useState(getInitialGroqApiKey)
+  const [groqApiKey, setGroqApiKey] = useState('')
   const [rows, setRows] = useState([])
   const [bulkProgress, setBulkProgress] = useState({ created: 0, total: 0 })
-  const normalizeMutation = useNormalizeVocabulary()
+  const [bulkResult, setBulkResult] = useState(null)
   const normalizeBulkMutation = useNormalizeBulkVocabulary()
   const bulkCreateMutation = useBulkCreateCollectionVocabularies()
 
   const validation = useMemo(() => getRowsValidation(rows), [rows])
-  const isBusy = normalizeMutation.isPending || normalizeBulkMutation.isPending || bulkCreateMutation.isPending
+  const isBusy = normalizeBulkMutation.isPending || bulkCreateMutation.isPending
 
   if (!open) return null
 
@@ -310,16 +317,22 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
     }
 
     try {
+      setBulkResult(null)
       setBulkProgress({ created: 0, total: rows.length })
-      await bulkCreateMutation.mutateAsync({
+      const result = await bulkCreateMutation.mutateAsync({
         collectionId,
-        vocabularies: rows.map(mapImportRowToCreateRequest),
+        items: rows.map(mapImportRowToCreateRequest),
       })
-      setBulkProgress({ created: rows.length, total: rows.length })
-      toast.success(`${rows.length} vocabulary items created`)
+      const summary = normalizeBulkCreateResult(result, rows.length)
+      setBulkResult(summary)
+      setBulkProgress({ created: summary.successCount, total: rows.length })
+      toast.success(`${summary.successCount} vocabulary items added`)
       onImported?.()
-      onClose()
     } catch (error) {
+      const errorPayload = error?.details?.data || error?.details?.result || error?.details
+      if (errorPayload?.failedItems || errorPayload?.errors) {
+        setBulkResult(normalizeBulkCreateResult(errorPayload, rows.length))
+      }
       toast.error(error.message || 'Unable to bulk create vocabulary')
     }
   }
@@ -391,10 +404,53 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
               setGroqApiKey={setGroqApiKey}
               rows={rows}
               setRows={setRows}
-              normalizeMutation={normalizeMutation}
               normalizeBulkMutation={normalizeBulkMutation}
               disabled={isBusy}
             />
+          ) : null}
+
+          {bulkResult ? (
+            <DashboardSection
+              title="Bulk add result"
+              description="Result returned by the collection bulk add endpoint."
+              actions={<Badge variant={bulkResult.failedCount ? 'warning' : 'success'}>{bulkResult.successCount} saved / {bulkResult.failedCount} failed</Badge>}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-background/70 p-4">
+                  <p className="text-sm font-semibold text-muted-foreground">successCount</p>
+                  <p className="mt-2 text-3xl font-bold text-success">{bulkResult.successCount}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-background/70 p-4">
+                  <p className="text-sm font-semibold text-muted-foreground">failedCount</p>
+                  <p className="mt-2 text-3xl font-bold text-destructive">{bulkResult.failedCount}</p>
+                </div>
+              </div>
+
+              {bulkResult.failedItems.length ? (
+                <div className="mt-4 overflow-x-auto rounded-card border border-border">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-border bg-muted/60 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3">Row</th>
+                        <th className="px-4 py-3">Term</th>
+                        <th className="px-4 py-3">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {bulkResult.failedItems.map((item, index) => (
+                        <tr key={`${item.row}-${item.term}-${index}`}>
+                          <td className="px-4 py-3">{item.row}</td>
+                          <td className="px-4 py-3 font-semibold">{item.term || '-'}</td>
+                          <td className="px-4 py-3 text-destructive">{item.reason}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">No failed items returned.</p>
+              )}
+            </DashboardSection>
           ) : null}
         </div>
 
@@ -407,9 +463,9 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
                 {bulkCreateMutation.isPending ? <Badge variant="warning">Creating {bulkProgress.created}/{bulkProgress.total}</Badge> : null}
               </div>
               {validation.invalidRows.length ? (
-                <p className="mt-2 text-sm text-warning">Rows with missing term or meaning must be fixed before Create All.</p>
+                <p className="mt-2 text-sm text-warning">Rows with missing term, long term, or missing meaning must be fixed before adding.</p>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Bulk create sends one request to the collection import endpoint. No one-by-one creation required.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Review AI data before saving. Bulk add sends one request to the collection endpoint.</p>
               )}
             </div>
 
@@ -421,7 +477,7 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
                 <FiDownload aria-hidden="true" /> Download JSON
               </Button>
               <Button size="lg" disabled={isBusy || !validation.valid} onClick={handleCreateAll}>
-                <FiUploadCloud aria-hidden="true" /> {bulkCreateMutation.isPending ? 'Creating All...' : 'Create All'}
+                <FiUploadCloud aria-hidden="true" /> {bulkCreateMutation.isPending ? 'Adding...' : 'Add all to collection'}
               </Button>
             </div>
           </div>

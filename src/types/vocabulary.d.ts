@@ -54,20 +54,24 @@ export type CreateVocabularyRequest = {
   collectionIds?: Array<string | number>
 }
 
-export type BulkCreateVocabularyItem = CreateVocabularyRequest & {
+export type BulkCreateVocabularyItem = {
+  term: string
+  meaning: string
+  vietnameseMeaning?: string
+  pronunciation?: string
+  partOfSpeech?: string
+  exampleSentence?: string
   note?: string
 }
 
 export type BulkCreateVocabularyRequest = {
-  vocabularies: BulkCreateVocabularyItem[]
+  items: BulkCreateVocabularyItem[]
 }
 
 export type BulkCreateVocabularyResponse = {
-  created?: number
-  failed?: number
-  items?: Vocabulary[]
-  vocabularies?: Vocabulary[]
-  errors?: Array<{ index?: number; message?: string }>
-} | Vocabulary[]
+  successCount?: number
+  failedCount?: number
+  failedItems?: Array<{ row?: number; term?: string; reason?: string }>
+}
 
 export type UpdateVocabularyRequest = Partial<CreateVocabularyRequest>

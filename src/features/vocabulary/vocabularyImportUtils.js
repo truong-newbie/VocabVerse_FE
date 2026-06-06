@@ -12,7 +12,9 @@ export function createEmptyVocabularyImportRow() {
 
 export function getVocabularyImportRowErrors(row) {
   const errors = {}
-  if (!row.term?.trim()) errors.term = 'Term is required'
+  const term = row.term?.trim() || ''
+  if (!term) errors.term = 'Term is required'
+  else if (term.length > 150) errors.term = 'Term must be 150 characters or less'
   if (!row.meaning?.trim()) errors.meaning = 'Meaning is required'
   return errors
 }
@@ -32,17 +34,13 @@ export function normalizeVocabularyImportRow(row = {}) {
 }
 
 export function mapImportRowToCreateRequest(row) {
-  const exampleSentence = row.exampleSentence?.trim()
-
   return {
-    word: row.term.trim(),
-    meaningEn: row.meaning.trim(),
-    meaningVi: row.vietnameseMeaning?.trim() || '',
-    phonetic: row.pronunciation?.trim() || '',
+    term: row.term.trim(),
+    meaning: row.meaning.trim(),
+    vietnameseMeaning: row.vietnameseMeaning?.trim() || '',
+    pronunciation: row.pronunciation?.trim() || '',
     partOfSpeech: row.partOfSpeech?.trim() || '',
-    examples: exampleSentence ? [{ sentence: exampleSentence, translation: '' }] : [],
-    synonyms: [],
-    antonyms: [],
+    exampleSentence: row.exampleSentence?.trim() || '',
     note: row.note?.trim() || '',
   }
 }

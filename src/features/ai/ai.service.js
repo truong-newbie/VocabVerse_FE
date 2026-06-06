@@ -22,9 +22,11 @@ export const aiService = {
 
   /** @param {NormalizeBulkVocabularyRequest} payload @returns {Promise<NormalizeBulkVocabularyResult>} */
   async normalizeBulkVocabulary(payload) {
-    const response = await apiClient.post(`${AI_VOCABULARY_BASE}/normalize/bulk`, {
+    const userApiKey = payload.userApiKey || payload.groqApiKey
+    const response = await apiClient.post(`${AI_VOCABULARY_BASE}/normalize-bulk`, {
       rawText: payload.rawText,
-      ...(payload.groqApiKey ? { groqApiKey: payload.groqApiKey } : {}),
+      provider: payload.provider || 'GROQ',
+      ...(userApiKey ? { userApiKey } : {}),
     })
     return unwrapApiResponse(response)
   },
