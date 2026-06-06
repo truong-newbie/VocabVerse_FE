@@ -80,49 +80,76 @@ export function isValidAiVocabularyResult(result) {
   return Boolean(result?.term && result?.meaning)
 }
 
+export function extractAiNormalizeQuotaInfo(payload) {
+  const source = payload?._meta || payload || {}
+  const remainingUses = source.remainingUses ?? source.remaining ?? source.quotaRemaining ?? source.remainingToday
+  const dailyLimit = source.dailyLimit ?? source.limit ?? source.dailyQuota
+
+  if (remainingUses === undefined && dailyLimit === undefined) return null
+
+  return {
+    remainingUses,
+    dailyLimit,
+  }
+}
+
 export function getFriendlyAiError(error) {
   const status = error?.status
-  const code = String(error?.code || error?.details?.errorCode || '').toUpperCase()
+  const code = String(error?.code || error?.details?.errorCode || error?.details?.code || '').toUpperCase()
   const message = error?.message || ''
   const lowerMessage = message.toLowerCase()
 
+  if (code === 'AI_DAILY_LIMIT_REACHED') {
+    return {
+      title: 'Đã hết lượt AI Normalize hôm nay',
+      description: 'Bạn đã dùng hết 3 lượt AI Normalize miễn phí hôm nay. Vui lòng quay lại vào ngày mai.',
+    }
+  }
+
+  if (status === 401 || code === 'UNAUTHORIZED') {
+    return {
+      title: 'Phiên đăng nhập hết hạn',
+      description: 'Vui lòng đăng nhập lại.',
+    }
+  }
+
   if (status === 429 || code.includes('RATE') || lowerMessage.includes('rate limit')) {
     return {
-      title: 'AI rate limit reached',
-      description: 'The AI provider is throttling requests. Wait a moment, then try again.',
+      title: 'AI đang bị giới hạn tốc độ',
+      description: 'AI đang bị giới hạn tốc độ. Vui lòng thử lại sau.',
     }
   }
 
   if (status === 408 || code.includes('TIMEOUT') || lowerMessage.includes('timeout')) {
     return {
-      title: 'AI request timed out',
-      description: 'The provider took too long to respond. Try a shorter input or retry in a moment.',
+      title: 'AI xử lý quá lâu',
+      description: 'AI xử lý quá lâu. Vui lòng thử lại.',
     }
   }
 
   if (status === 502 || status === 503 || status === 504 || code.includes('PROVIDER') || lowerMessage.includes('provider')) {
     return {
-      title: 'AI provider unavailable',
-      description: 'The AI provider is temporarily unavailable. Your input is safe; retry when the service recovers.',
+      title: 'AI chưa sẵn sàng',
+      description: 'AI hiện chưa sẵn sàng. Vui lòng thử lại sau.',
     }
   }
 
   if (code.includes('INVALID_INPUT')) {
     return {
-      title: 'Invalid input',
-      description: 'Check that raw text, Groq API key, and vocabulary fields are valid before retrying.',
+      title: 'Nội dung chưa hợp lệ',
+      description: 'Vui lòng nhập nội dung từ vựng cần normalize.',
     }
   }
 
   if (code.includes('RESPONSE_INVALID') || lowerMessage.includes('invalid response') || lowerMessage.includes('did not include')) {
     return {
-      title: 'AI returned an invalid response',
-      description: 'The backend response could not be parsed into vocabulary fields. Retry or inspect the debug panel in development.',
+      title: 'AI trả về dữ liệu không hợp lệ',
+      description: 'AI trả về dữ liệu không hợp lệ. Vui lòng thử lại.',
     }
   }
 
   return {
-    title: 'AI normalize failed',
-    description: message || 'The AI request failed. Check your input and try again.',
+    title: 'AI Normalize thất bại',
+    description: message || 'Không thể AI Normalize. Vui lòng thử lại.',
   }
 }

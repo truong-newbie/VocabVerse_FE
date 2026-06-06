@@ -1,8 +1,5 @@
 export type NormalizeVocabularyRequest = {
   rawText: string
-  groqApiKey?: string
-  userApiKey?: string
-  provider?: 'GROQ' | string
 }
 
 export type NormalizeVocabularyResult = {
@@ -22,6 +19,10 @@ export type NormalizeVocabularyResult = {
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | string
   aiExplanation?: string
   explanation?: string
+  _meta?: {
+    remainingUses?: number
+    dailyLimit?: number
+  }
 }
 
 export type NormalizeBulkVocabularyRequest = {

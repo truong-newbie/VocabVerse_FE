@@ -16,6 +16,7 @@ import { getCollectionTitle } from '@/features/collection/collectionUtils'
 import { useCollections } from '@/features/collection/useCollections'
 import { useNormalizeVocabulary } from '@/features/ai/useNormalizeVocabulary'
 import {
+  extractAiNormalizeQuotaInfo,
   getFriendlyAiError,
   isValidAiVocabularyResult,
   normalizeAiVocabularyResult,
@@ -24,7 +25,7 @@ import {
 import { useCreateVocabulary } from '@/features/vocabulary/useVocabularies'
 
 const normalizeSchema = z.object({
-  rawText: z.string().trim().min(1, 'Enter an English word or phrase').max(300, 'Keep the input under 300 characters'),
+  rawText: z.string().trim().min(1, 'Vui lòng nhập nội dung từ vựng cần normalize.').max(500, 'Nội dung tối đa 500 ký tự.'),
 })
 
 const saveSchema = z.object({
@@ -124,6 +125,25 @@ function AiSuggestionPreview({ result, onCopy }) {
   )
 }
 
+function AiQuotaNotice({ quotaInfo }) {
+  if (!quotaInfo) return null
+
+  const hasRemaining = quotaInfo.remainingUses !== undefined && quotaInfo.remainingUses !== null
+  const hasLimit = quotaInfo.dailyLimit !== undefined && quotaInfo.dailyLimit !== null
+
+  if (!hasRemaining && !hasLimit) return null
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
+      <p className="text-sm font-semibold text-primary">Daily AI Normalize trial</p>
+      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+        {hasRemaining ? `${quotaInfo.remainingUses} lượt còn lại hôm nay` : 'Backend đang quản lý quota hôm nay'}
+        {hasLimit ? ` / giới hạn ${quotaInfo.dailyLimit} lượt mỗi ngày.` : '.'}
+      </p>
+    </div>
+  )
+}
+
 function AiNormalizeErrorState({ error, onRetry }) {
   const friendlyError = getFriendlyAiError(error)
 
@@ -166,6 +186,7 @@ export default function AiPage() {
   const [aiResult, setAiResult] = useState(null)
   const [rawAiResponse, setRawAiResponse] = useState(null)
   const [aiError, setAiError] = useState(null)
+  const [quotaInfo, setQuotaInfo] = useState(null)
   const normalizeMutation = useNormalizeVocabulary()
   const createVocabularyMutation = useCreateVocabulary()
   const collectionsQuery = useCollections({ page: 0, size: 100 })
@@ -222,13 +243,14 @@ export default function AiPage() {
       const rawResult = await normalizeMutation.mutateAsync(rawText.trim())
       const parsedResult = normalizeAiVocabularyResult(rawResult)
       setRawAiResponse(rawResult)
+      setQuotaInfo(extractAiNormalizeQuotaInfo(rawResult))
       if (!isValidAiVocabularyResult(parsedResult)) {
         const invalidResponseError = new Error('AI response did not include required term and meaning fields')
-        invalidResponseError.code = 'INVALID_AI_RESPONSE'
+        invalidResponseError.code = 'AI_RESPONSE_INVALID'
         throw invalidResponseError
       }
       setAiResult(parsedResult)
-      toast.success('AI suggestion is ready')
+      toast.success('AI Normalize successful.')
     } catch (error) {
       setAiError(error)
       const friendlyError = getFriendlyAiError(error)
@@ -273,6 +295,7 @@ export default function AiPage() {
     setAiResult(null)
     setRawAiResponse(null)
     setAiError(null)
+    setQuotaInfo(null)
     normalizeMutation.reset()
     normalizeForm.reset({ rawText: '' })
     saveForm.reset({
@@ -296,9 +319,11 @@ export default function AiPage() {
       <PageHeader
         eyebrow="AI normalize"
         title="AI Vocabulary Normalize"
-        description="Input a raw English word or phrase, review the AI suggestion, then save it as a vocabulary entry."
+        description="Input raw vocabulary text. Backend uses the system Groq API key and enforces the daily trial quota."
         actions={aiResult ? <Button variant="secondary" onClick={handleReset}><FiRefreshCw aria-hidden="true" /> New normalize</Button> : null}
       />
+
+      <AiQuotaNotice quotaInfo={quotaInfo} />
 
       <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <article className="rounded-card border border-border bg-card p-6 shadow-sm">
@@ -308,24 +333,24 @@ export default function AiPage() {
             </div>
             <div>
               <h2 className="text-2xl font-semibold">Raw input</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">No API key is exposed in the frontend. The authenticated backend handles the AI request.</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Backend uses the system Groq API key. This trial flow never asks for your Groq key.</p>
             </div>
           </div>
 
           <form className="mt-6 space-y-5" onSubmit={normalizeForm.handleSubmit(handleNormalize)} noValidate>
-            <FormField id="rawText" label="English word or phrase" error={normalizeForm.formState.errors.rawText?.message} hint="Example: abandon, make ends meet, resilient">
+            <FormField id="rawText" label="Raw vocabulary input" error={normalizeForm.formState.errors.rawText?.message} hint="Maximum 500 characters. Backend enforces the 3-times-per-day trial quota.">
               <textarea
                 id="rawText"
                 disabled={isProcessing}
                 className="min-h-40 w-full rounded-button border border-input bg-background px-4 py-3 text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60"
-                placeholder="Type a word or phrase to normalize..."
+                placeholder="Example: abandon - to leave permanently, verb, He abandoned the project."
                 aria-invalid={Boolean(normalizeForm.formState.errors.rawText)}
                 {...normalizeForm.register('rawText')}
               />
             </FormField>
 
             <Button type="submit" size="lg" className="w-full" disabled={isProcessing}>
-              {isProcessing ? 'AI is processing...' : 'Normalize with AI'}
+              {isProcessing ? 'Normalizing...' : 'AI Normalize'}
               <FiZap aria-hidden="true" />
             </Button>
           </form>
@@ -342,7 +367,7 @@ export default function AiPage() {
             <EmptyState
               icon={FiZap}
               title="No AI suggestion yet"
-              description="Enter a word or phrase, then the AI result preview will appear here with meaning, pronunciation, examples, synonyms, antonyms, difficulty, and explanation."
+              description="Enter raw vocabulary input, then the normalized JSON preview will appear here with meaning, pronunciation, examples, synonyms, antonyms, difficulty, and explanation."
               action={<Button variant="secondary" onClick={() => normalizeForm.setFocus('rawText')}>Start with a word</Button>}
             />
           ) : null}
