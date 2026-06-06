@@ -9,10 +9,12 @@ import {
   FiPenTool,
   FiRepeat,
   FiSearch,
+  FiShield,
   FiType,
   FiTarget,
   FiZap,
 } from 'react-icons/fi'
+import { useAuthStore } from '@/app/store/authStore'
 import { cn } from '../../utils/cn'
 
 const navigation = [
@@ -30,7 +32,13 @@ const navigation = [
   { label: 'Roleplay', to: '/roleplay', icon: FiMessageCircle },
 ]
 
+const adminNavigation = { label: 'Admin Portal', to: '/admin', icon: FiShield }
+
 export default function AppSidebar({ mobileOpen = false, onNavigate }) {
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN'
+  const items = isAdmin ? [...navigation, adminNavigation] : navigation
+
   return (
     <aside
       className={cn(
@@ -47,8 +55,8 @@ export default function AppSidebar({ mobileOpen = false, onNavigate }) {
           </div>
         </NavLink>
 
-        <nav className="mt-8 flex flex-1 flex-col gap-1" aria-label="Main navigation">
-          {navigation.map((item) => (
+        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto pr-1" aria-label="Main navigation">
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
