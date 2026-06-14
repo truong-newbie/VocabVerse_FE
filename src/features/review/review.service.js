@@ -4,6 +4,8 @@ import { unwrapApiResponse } from '@/services/apiError'
 const REVIEWS_BASE = '/reviews'
 const LEARNING_PROGRESS_BASE = '/learning/progress'
 const COLLECTIONS_BASE = '/collections'
+const REVIEW_SETTING_PATH = 'review-setting'
+const LEGACY_REVIEW_SETTINGS_PATH = 'review-settings'
 
 /**
  * @typedef {import('@/types/review').TodayReviewsResponse} TodayReviewsResponse
@@ -15,6 +17,28 @@ const COLLECTIONS_BASE = '/collections'
  * @typedef {import('@/types/review').CollectionReviewSettings} CollectionReviewSettings
  * @typedef {import('@/types/review').UpdateCollectionReviewSettingsRequest} UpdateCollectionReviewSettingsRequest
  */
+
+function shouldTryLegacyReviewSettings(error) {
+  return [404, 405, 500].includes(Number(error?.status))
+}
+
+function getReviewSettingUrl(collectionId, path = REVIEW_SETTING_PATH) {
+  return `${COLLECTIONS_BASE}/${collectionId}/${path}`
+}
+
+function toLegacyReviewSettingsPayload(payload) {
+  const legacyPayload = {
+    ...payload,
+    reviewEnabled: payload.enabled,
+    emailReminderEnabled: payload.emailEnabled,
+  }
+
+  if (payload.intervals) {
+    legacyPayload.reviewIntervals = payload.intervals
+  }
+
+  return legacyPayload
+}
 
 export const reviewService = {
   /** @returns {Promise<TodayReviewsResponse>} */
@@ -55,25 +79,49 @@ export const reviewService = {
 
   /** @param {string | number} collectionId @returns {Promise<CollectionReviewSettings>} */
   async getCollectionReviewSettings(collectionId) {
-    const response = await apiClient.get(`${COLLECTIONS_BASE}/${collectionId}/review-settings`)
-    return unwrapApiResponse(response)
+    try {
+      const response = await apiClient.get(getReviewSettingUrl(collectionId))
+      return unwrapApiResponse(response)
+    } catch (error) {
+      if (!shouldTryLegacyReviewSettings(error)) throw error
+      const response = await apiClient.get(getReviewSettingUrl(collectionId, LEGACY_REVIEW_SETTINGS_PATH))
+      return unwrapApiResponse(response)
+    }
   },
 
   /** @param {string | number} collectionId @param {UpdateCollectionReviewSettingsRequest} payload @returns {Promise<CollectionReviewSettings>} */
   async updateCollectionReviewSettings(collectionId, payload) {
-    const response = await apiClient.put(`${COLLECTIONS_BASE}/${collectionId}/review-settings`, payload)
-    return unwrapApiResponse(response)
+    try {
+      const response = await apiClient.patch(getReviewSettingUrl(collectionId), payload)
+      return unwrapApiResponse(response)
+    } catch (error) {
+      if (!shouldTryLegacyReviewSettings(error)) throw error
+      const response = await apiClient.put(getReviewSettingUrl(collectionId, LEGACY_REVIEW_SETTINGS_PATH), toLegacyReviewSettingsPayload(payload))
+      return unwrapApiResponse(response)
+    }
   },
 
   /** @param {string | number} collectionId @returns {Promise<CollectionReviewSettings | object>} */
   async disableCollectionReview(collectionId) {
-    const response = await apiClient.post(`${COLLECTIONS_BASE}/${collectionId}/review-settings/disable`)
-    return unwrapApiResponse(response)
+    try {
+      const response = await apiClient.patch(getReviewSettingUrl(collectionId), { enabled: false })
+      return unwrapApiResponse(response)
+    } catch (error) {
+      if (!shouldTryLegacyReviewSettings(error)) throw error
+      const response = await apiClient.post(`${getReviewSettingUrl(collectionId, LEGACY_REVIEW_SETTINGS_PATH)}/disable`)
+      return unwrapApiResponse(response)
+    }
   },
 
   /** @param {string | number} collectionId @returns {Promise<object>} */
   async resetCollectionReviewSchedule(collectionId) {
-    const response = await apiClient.post(`${COLLECTIONS_BASE}/${collectionId}/review-settings/reset`)
-    return unwrapApiResponse(response)
+    try {
+      const response = await apiClient.post(`${getReviewSettingUrl(collectionId)}/reset`)
+      return unwrapApiResponse(response)
+    } catch (error) {
+      if (!shouldTryLegacyReviewSettings(error)) throw error
+      const response = await apiClient.post(`${getReviewSettingUrl(collectionId, LEGACY_REVIEW_SETTINGS_PATH)}/reset`)
+      return unwrapApiResponse(response)
+    }
   },
 }
