@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { FiCheckCircle, FiClipboard, FiCode, FiDownload, FiList, FiUploadCloud, FiX, FiZap } from 'react-icons/fi'
+import { FiCheckCircle, FiClipboard, FiCode, FiDownload, FiInfo, FiList, FiUploadCloud, FiX, FiZap } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import EmptyState from '@/components/common/EmptyState'
 import ErrorFallback from '@/components/common/ErrorFallback'
-import DashboardSection from '@/components/dashboard/DashboardSection'
 import { extractAiVocabularyRows, getFriendlyAiError } from '@/features/ai/aiUtils'
 import { useNormalizeBulkVocabulary } from '@/features/ai/useNormalizeVocabulary'
 import { useBulkCreateCollectionVocabularies } from '@/features/vocabulary/useVocabularies'
@@ -24,6 +22,8 @@ const tabs = [
   { id: 'ai', label: 'AI Normalize', icon: FiZap },
 ]
 
+const workflowSteps = ['Method', 'Input', 'Review', 'Import']
+
 const sampleRows = [
   {
     term: 'abandon',
@@ -37,6 +37,52 @@ const sampleRows = [
 ]
 
 const sampleJson = JSON.stringify(sampleRows, null, 2)
+
+function ImportWorkspacePanel({ title, step, description, actions, children, className = '' }) {
+  return (
+    <section className={`rounded-card border border-border bg-card p-4 text-card-foreground shadow-sm ${className}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {step ? <Badge variant="secondary">{step}</Badge> : null}
+            <h3 className="truncate text-base font-semibold tracking-tight">{title}</h3>
+          </div>
+          {description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}
+        </div>
+        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      </div>
+      <div className="mt-3">{children}</div>
+    </section>
+  )
+}
+
+function ImportModeTabs({ activeTab, onChange, disabled }) {
+  return (
+    <div className="flex flex-wrap gap-1 border-b border-border" role="tablist" aria-label="Import mode">
+      {tabs.map((tab) => {
+        const Icon = tab.icon
+        const isActive = activeTab === tab.id
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            disabled={disabled}
+            onClick={() => onChange(tab.id)}
+            className={`-mb-px inline-flex h-10 items-center justify-center gap-2 rounded-t-button border px-4 text-sm font-semibold transition disabled:pointer-events-none disabled:opacity-60 ${
+              isActive
+                ? 'border-border border-b-card bg-card text-foreground shadow-sm'
+                : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <Icon aria-hidden="true" /> {tab.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 function parseWordList(value) {
   return value
@@ -115,17 +161,18 @@ function JsonImportTab({ jsonText, setJsonText, rows, setRows, error, setError, 
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <DashboardSection
+    <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+      <ImportWorkspacePanel
+        step="Step 2"
         title="Paste JSON"
-        description="Paste an array of vocabulary objects, validate it, then edit rows before creating."
+        description="Paste an array of vocabulary objects, then validate it."
         actions={<Button variant="outline" onClick={copySampleJson}><FiClipboard aria-hidden="true" /> Copy JSON</Button>}
       >
         <textarea
           value={jsonText}
           disabled={disabled}
           onChange={(event) => setJsonText(event.target.value)}
-          className="min-h-80 w-full rounded-button border border-input bg-background p-4 font-mono text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+          className="min-h-[360px] w-full rounded-button border border-input bg-background p-4 font-mono text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60 xl:min-h-[46vh]"
           placeholder={sampleJson}
         />
         {error ? <p className="mt-3 text-sm font-semibold text-destructive">{error}</p> : null}
@@ -135,15 +182,16 @@ function JsonImportTab({ jsonText, setJsonText, rows, setRows, error, setError, 
           </Button>
           <Button variant="secondary" onClick={() => setJsonText(sampleJson)} disabled={disabled}>Use Sample</Button>
         </div>
-      </DashboardSection>
+      </ImportWorkspacePanel>
 
-      <DashboardSection
+      <ImportWorkspacePanel
+        step="Step 3"
         title="Preview Rows"
-        description="Rows are editable. Required fields are validated before bulk create."
+        description="Edit rows and fix required fields before importing."
         actions={<Badge variant={rows.length ? 'primary' : 'muted'}>{rows.length} rows</Badge>}
       >
         <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled} />
-      </DashboardSection>
+      </ImportWorkspacePanel>
     </div>
   )
 }
@@ -156,16 +204,17 @@ function WordListImportTab({ wordListText, setWordListText, rows, setRows, onSen
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <DashboardSection
+    <div className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+      <ImportWorkspacePanel
+        step="Step 2"
         title="Raw Word List"
-        description="Paste one word or phrase per line. Send it to AI Normalize to fill meanings and examples."
+        description="Paste one word or phrase per line."
       >
         <textarea
           value={wordListText}
           disabled={disabled}
           onChange={(event) => setWordListText(event.target.value)}
-          className="min-h-80 w-full rounded-button border border-input bg-background p-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+          className="min-h-[360px] w-full rounded-button border border-input bg-background p-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60 xl:min-h-[46vh]"
           placeholder={'abandon\nbenefit\nconsequence\nmaintain'}
         />
         <div className="mt-4 flex flex-wrap gap-2">
@@ -176,15 +225,16 @@ function WordListImportTab({ wordListText, setWordListText, rows, setRows, onSen
             <FiZap aria-hidden="true" /> Send to AI Normalize
           </Button>
         </div>
-      </DashboardSection>
+      </ImportWorkspacePanel>
 
-      <DashboardSection
+      <ImportWorkspacePanel
+        step="Step 3"
         title="Word Preview"
-        description="Raw word rows need meanings before Add all to collection is enabled. AI Normalize is the fastest path."
+        description="Raw rows need meanings before import. AI Normalize can fill them."
         actions={<Badge variant={rows.length ? 'warning' : 'muted'}>{rows.length} rows</Badge>}
       >
         <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled} />
-      </DashboardSection>
+      </ImportWorkspacePanel>
     </div>
   )
 }
@@ -242,30 +292,32 @@ function AiNormalizeTab({
   const normalizeError = normalizeBulkMutation.error
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-      <div className="space-y-5">
-        <DashboardSection
+    <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <div className="space-y-4">
+        <ImportWorkspacePanel
+          step="Step 2"
           title="Normalize With AI"
-          description="Paste English words separated by new lines or commas. Review and edit the AI result before saving."
+          description="Paste English words separated by new lines or commas."
         >
           <textarea
             value={rawText}
             disabled={disabled || isNormalizing}
             onChange={(event) => setRawText(event.target.value)}
-            className="min-h-56 w-full rounded-button border border-input bg-background p-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+            className="min-h-64 w-full rounded-button border border-input bg-background p-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 disabled:opacity-60 xl:min-h-[32vh]"
             placeholder={'abandon\nbenefit\nconsequence\nmaintain'}
           />
           <Button className="mt-4 w-full" size="lg" onClick={normalizeWithAi} disabled={disabled || isNormalizing || !rawText.trim()}>
             <FiZap aria-hidden="true" /> {isNormalizing ? 'Normalizing...' : 'Normalize With AI'}
           </Button>
-        </DashboardSection>
+        </ImportWorkspacePanel>
 
         <GroqApiKeyCard value={groqApiKey} disabled={disabled || isNormalizing} onChange={setGroqApiKey} />
       </div>
 
-      <DashboardSection
+      <ImportWorkspacePanel
+        step="Step 3"
         title="AI Result Preview"
-        description="AI can be wrong. Review every row before adding it to the collection."
+        description="Review and edit every row before adding it to the collection."
         actions={isNormalizing ? <Badge variant="warning">AI running</Badge> : <Badge variant={rows.length ? 'success' : 'muted'}>{rows.length} rows</Badge>}
       >
         {normalizeError ? (
@@ -273,7 +325,7 @@ function AiNormalizeTab({
         ) : (
           <VocabularyPreviewTable rows={rows} onChangeRows={setRows} disabled={disabled || isNormalizing} />
         )}
-      </DashboardSection>
+      </ImportWorkspacePanel>
     </div>
   )
 }
@@ -339,78 +391,92 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-3 backdrop-blur-sm" role="presentation">
-      <section className="max-h-[94vh] w-full max-w-7xl overflow-y-auto rounded-dialog border border-border bg-card text-card-foreground shadow-xl" role="dialog" aria-modal="true" aria-labelledby="import-vocabulary-title">
-        <div className="sticky top-0 z-10 border-b border-border bg-card/95 p-5 backdrop-blur">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Collection import</p>
-              <h2 id="import-vocabulary-title" className="mt-2 text-3xl font-bold tracking-tight">Import Vocabularies</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Paste JSON, start from a raw word list, or normalize with AI. Review and edit everything before bulk create.</p>
+      <section className="flex max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-dialog border border-border bg-card text-card-foreground shadow-xl" role="dialog" aria-modal="true" aria-labelledby="import-vocabulary-title">
+        <div className="border-b border-primary/10 bg-gradient-to-r from-primary/10 via-card to-card p-4 backdrop-blur">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+                <FiUploadCloud aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 id="import-vocabulary-title" className="truncate text-xl font-bold tracking-tight">Import Vocabularies</h2>
+                  <span
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-button text-primary hover:bg-primary/10"
+                    title="Paste JSON, start from a raw word list, or normalize with AI. Review and edit everything before bulk create."
+                    aria-label="Import help"
+                  >
+                    <FiInfo aria-hidden="true" />
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">Choose a source, edit the preview, then add valid rows.</p>
+              </div>
             </div>
-            <Button variant="ghost" className="h-10 w-10 px-0" onClick={onClose} disabled={isBusy} aria-label="Close import vocabulary dialog">
-              <FiX aria-hidden="true" />
-            </Button>
-          </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              return (
-                <Button key={tab.id} variant={activeTab === tab.id ? 'primary' : 'secondary'} onClick={() => setActiveTab(tab.id)} disabled={isBusy}>
-                  <Icon aria-hidden="true" /> {tab.label}
-                </Button>
-              )
-            })}
+            <div className="flex shrink-0 items-center gap-3">
+              <div className="hidden flex-wrap items-center gap-1.5 md:flex" aria-label="Import workflow">
+                {workflowSteps.map((step, index) => (
+                  <div key={step} className="inline-flex h-8 items-center gap-2 rounded-full border border-primary/15 bg-card/80 px-3 text-xs font-semibold text-muted-foreground shadow-sm">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[11px] text-primary">{index + 1}</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
+              <Button variant="ghost" className="h-10 w-10 border border-border bg-card/80 px-0 hover:border-primary/30 hover:bg-primary/10 hover:text-primary" onClick={onClose} disabled={isBusy} aria-label="Close import vocabulary dialog">
+                <FiX aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-5 p-5">
-          {!rows.length ? (
-            <EmptyState
-              icon={FiUploadCloud}
-              title="No import preview yet"
-              description="Validate JSON, preview a raw word list, or run AI Normalize to generate editable rows."
-            />
-          ) : null}
+        <div className="flex-1 overflow-y-auto bg-muted/20 p-4">
+          <div className="rounded-card border border-border bg-card">
+            <div className="px-4 pt-3">
+              <ImportModeTabs activeTab={activeTab} onChange={setActiveTab} disabled={isBusy} />
+            </div>
 
-          {activeTab === 'json' ? (
-            <JsonImportTab
-              jsonText={jsonText}
-              setJsonText={setJsonText}
-              rows={rows}
-              setRows={setRows}
-              error={jsonError}
-              setError={setJsonError}
-              disabled={isBusy}
-            />
-          ) : null}
+            <div className="p-4">
+              {activeTab === 'json' ? (
+                <JsonImportTab
+                  jsonText={jsonText}
+                  setJsonText={setJsonText}
+                  rows={rows}
+                  setRows={setRows}
+                  error={jsonError}
+                  setError={setJsonError}
+                  disabled={isBusy}
+                />
+              ) : null}
 
-          {activeTab === 'wordList' ? (
-            <WordListImportTab
-              wordListText={wordListText}
-              setWordListText={setWordListText}
-              rows={rows}
-              setRows={setRows}
-              onSendToAi={handleSendWordListToAi}
-              disabled={isBusy}
-            />
-          ) : null}
+              {activeTab === 'wordList' ? (
+                <WordListImportTab
+                  wordListText={wordListText}
+                  setWordListText={setWordListText}
+                  rows={rows}
+                  setRows={setRows}
+                  onSendToAi={handleSendWordListToAi}
+                  disabled={isBusy}
+                />
+              ) : null}
 
-          {activeTab === 'ai' ? (
-            <AiNormalizeTab
-              rawText={aiRawText}
-              setRawText={setAiRawText}
-              groqApiKey={groqApiKey}
-              setGroqApiKey={setGroqApiKey}
-              rows={rows}
-              setRows={setRows}
-              normalizeBulkMutation={normalizeBulkMutation}
-              disabled={isBusy}
-            />
-          ) : null}
+              {activeTab === 'ai' ? (
+                <AiNormalizeTab
+                  rawText={aiRawText}
+                  setRawText={setAiRawText}
+                  groqApiKey={groqApiKey}
+                  setGroqApiKey={setGroqApiKey}
+                  rows={rows}
+                  setRows={setRows}
+                  normalizeBulkMutation={normalizeBulkMutation}
+                  disabled={isBusy}
+                />
+              ) : null}
+            </div>
+          </div>
 
           {bulkResult ? (
-            <DashboardSection
+            <ImportWorkspacePanel
+              className="mt-4"
               title="Bulk add result"
               description="Result returned by the collection bulk add endpoint."
               actions={<Badge variant={bulkResult.failedCount ? 'warning' : 'success'}>{bulkResult.successCount} saved / {bulkResult.failedCount} failed</Badge>}
@@ -450,12 +516,12 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
               ) : (
                 <p className="mt-4 text-sm text-muted-foreground">No failed items returned.</p>
               )}
-            </DashboardSection>
+            </ImportWorkspacePanel>
           ) : null}
         </div>
 
-        <div className="sticky bottom-0 z-10 border-t border-border bg-card/95 p-5 backdrop-blur">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="border-t border-border bg-card/95 p-3 backdrop-blur">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="flex flex-wrap gap-2">
                 <Badge variant={rows.length ? 'primary' : 'muted'}>{rows.length} rows</Badge>
@@ -465,7 +531,7 @@ export default function ImportVocabularyDialog({ open, collectionId, onClose, on
               {validation.invalidRows.length ? (
                 <p className="mt-2 text-sm text-warning">Rows with missing term, long term, or missing meaning must be fixed before adding.</p>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Review AI data before saving. Bulk add sends one request to the collection endpoint.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Step 4: review data, then add all valid rows to this collection.</p>
               )}
             </div>
 
