@@ -86,6 +86,9 @@ export type VocabularyProgress = {
   nextReviewAt?: string
   repetitionCount?: number
   easeFactor?: number
+  fsrsDifficulty?: number | null
+  fsrsStability?: number | null
+  fsrsRetrievability?: number | null
 }
 
 export type CollectionReviewSettings = {
@@ -95,6 +98,8 @@ export type CollectionReviewSettings = {
   emailEnabled?: boolean
   schedulerType?: ReviewSchedulerType | null
   intervals?: number[]
+  fsrsDesiredRetention?: number
+  fsrsMaxIntervalDays?: number
   lastResetAt?: string | null
   createdAt?: string
   updatedAt?: string
@@ -113,4 +118,6 @@ export type UpdateCollectionReviewSettingsRequest = {
   intervals?: number[]
   reminderTime?: string | null
   timezone?: string | null
+  fsrsDesiredRetention?: number
+  fsrsMaxIntervalDays?: number
 }
