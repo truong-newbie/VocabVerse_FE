@@ -10,9 +10,11 @@
 export function normalizeApiError(error) {
   const response = error?.response
   const payload = response?.data
+  const nestedError = payload?.error
   const message =
     payload?.message ||
-    payload?.error ||
+    nestedError?.message ||
+    (typeof nestedError === 'string' ? nestedError : null) ||
     error?.message ||
     'Unexpected API error'
 
@@ -20,7 +22,7 @@ export function normalizeApiError(error) {
     name: 'ApiError',
     message,
     status: response?.status,
-    code: payload?.code || payload?.errorCode,
+    code: payload?.code || payload?.errorCode || nestedError?.code,
     details: payload,
     isAuthError: response?.status === 401,
   }

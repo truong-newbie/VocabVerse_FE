@@ -2,6 +2,8 @@ export type ReviewResult = 'AGAIN' | 'HARD' | 'GOOD' | 'EASY'
 
 export type LearningStatus = 'NEW' | 'LEARNING' | 'REVIEWING' | 'MASTERED' | string
 
+export type ReviewSchedulerType = 'FIXED_INTERVAL' | 'SM2' | 'FSRS'
+
 export type ReviewVocabulary = {
   id: string | number
   vocabularyId?: string | number
@@ -87,21 +89,28 @@ export type VocabularyProgress = {
 }
 
 export type CollectionReviewSettings = {
+  id?: string | number
   collectionId?: string | number
-  reviewEnabled?: boolean
   enabled?: boolean
+  emailEnabled?: boolean
+  schedulerType?: ReviewSchedulerType | null
+  intervals?: number[]
+  lastResetAt?: string | null
+  createdAt?: string
+  updatedAt?: string
+  reviewEnabled?: boolean
   emailReminderEnabled?: boolean
   emailReminder?: boolean
   reminderTime?: string
-  timezone?: string
+  timezone?: string | null
   reviewIntervals?: number[]
-  intervals?: number[]
 }
 
 export type UpdateCollectionReviewSettingsRequest = {
-  reviewEnabled: boolean
-  emailReminderEnabled: boolean
-  reminderTime: string
-  timezone: string
-  reviewIntervals: number[]
+  enabled?: boolean
+  emailEnabled?: boolean
+  schedulerType?: ReviewSchedulerType
+  intervals?: number[]
+  reminderTime?: string | null
+  timezone?: string | null
 }

@@ -1,12 +1,22 @@
 export function normalizeReviewIntervals(values) {
   return values
     .map((value) => Number(value))
-    .filter((value) => Number.isInteger(value) && value > 0)
+    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 3650)
 }
 
 export function getReviewIntervalsError(values) {
   if (!values.length) return 'Add at least one review interval.'
-  const invalid = values.some((value) => !Number.isInteger(Number(value)) || Number(value) <= 0)
-  if (invalid) return 'Intervals must be positive integers.'
+  const invalid = values.some((value) => !Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 3650)
+  if (invalid) return 'Intervals must be whole days from 1 to 3650.'
   return ''
+}
+
+export function normalizeReminderTime(value) {
+  if (!value) return null
+  return value.length === 5 ? `${value}:00` : value
+}
+
+export function formatReminderTimeInput(value) {
+  if (!value) return '08:00'
+  return value.length >= 5 ? value.slice(0, 5) : value
 }
