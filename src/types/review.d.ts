@@ -31,6 +31,17 @@ export type TodayReviewsResponse = ReviewVocabulary[] | {
   totalDue?: number
 }
 
+export type ReviewStatsResponse = {
+  wordsDue?: number
+  dueTodayCount?: number
+  reviewedToday?: number
+  reviewedTodayCount?: number
+  currentStreak?: number
+  streak?: number
+  totalVocabulary?: number
+  totalVocabularies?: number
+}
+
 export type SubmitReviewRequest = {
   result: ReviewResult
 }
@@ -73,4 +84,24 @@ export type VocabularyProgress = {
   nextReviewAt?: string
   repetitionCount?: number
   easeFactor?: number
+}
+
+export type CollectionReviewSettings = {
+  collectionId?: string | number
+  reviewEnabled?: boolean
+  enabled?: boolean
+  emailReminderEnabled?: boolean
+  emailReminder?: boolean
+  reminderTime?: string
+  timezone?: string
+  reviewIntervals?: number[]
+  intervals?: number[]
+}
+
+export type UpdateCollectionReviewSettingsRequest = {
+  reviewEnabled: boolean
+  emailReminderEnabled: boolean
+  reminderTime: string
+  timezone: string
+  reviewIntervals: number[]
 }

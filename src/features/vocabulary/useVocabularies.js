@@ -42,8 +42,11 @@ export function useCreateVocabulary() {
 
   return useMutation({
     mutationFn: vocabularyService.createVocabulary,
-    onSuccess: () => {
+    onSuccess: (vocabulary, variables) => {
       queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
+      if (variables?.collectionIds?.length) {
+        queryClient.invalidateQueries({ queryKey: ['collections'] })
+      }
     },
   })
 }
@@ -93,6 +96,19 @@ export function useRemoveVocabularyFromCollection() {
       queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.detail(variables.vocabularyId) })
       queryClient.invalidateQueries({ queryKey: ['collections'] })
+    },
+  })
+}
+
+export function useBulkCreateCollectionVocabularies() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ collectionId, items, vocabularies }) => vocabularyService.bulkCreateCollectionVocabularies(collectionId, { items: items || vocabularies || [] }),
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: vocabularyQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['collections'] })
+      queryClient.invalidateQueries({ queryKey: ['vocabularies', 'collection', variables.collectionId] })
     },
   })
 }

@@ -9,9 +9,12 @@ import {
   FiPenTool,
   FiRepeat,
   FiSearch,
+  FiShield,
+  FiType,
   FiTarget,
   FiZap,
 } from 'react-icons/fi'
+import { useAuthStore } from '@/app/store/authStore'
 import { cn } from '../../utils/cn'
 
 const navigation = [
@@ -19,16 +22,23 @@ const navigation = [
   { label: 'Collections', to: '/collections', icon: FiLayers },
   { label: 'Public Library', to: '/public/collections', icon: FiGlobe },
   { label: 'Vocabulary', to: '/vocabularies', icon: FiBookOpen },
+  { label: 'Dictionary', to: '/dictionary', icon: FiSearch },
   { label: 'Review Today', to: '/review', icon: FiRepeat },
   { label: 'Flashcards', to: '/flashcards', icon: FiZap },
   { label: 'Quiz', to: '/quiz', icon: FiTarget },
-  { label: 'Typing', to: '/typing', icon: FiPenTool },
-  { label: 'AI Coach', to: '/ai', icon: FiSearch },
+  { label: 'Typing', to: '/typing', icon: FiType },
+  { label: 'AI Coach', to: '/ai', icon: FiPenTool },
   { label: 'Shadowing', to: '/shadowing', icon: FiMic },
   { label: 'Roleplay', to: '/roleplay', icon: FiMessageCircle },
 ]
 
+const adminNavigation = { label: 'Admin Portal', to: '/admin', icon: FiShield }
+
 export default function AppSidebar({ mobileOpen = false, onNavigate }) {
+  const user = useAuthStore((state) => state.user)
+  const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN'
+  const items = isAdmin ? [...navigation, adminNavigation] : navigation
+
   return (
     <aside
       className={cn(
@@ -41,12 +51,12 @@ export default function AppSidebar({ mobileOpen = false, onNavigate }) {
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary text-sm font-black text-primary-foreground shadow-sm">VV</span>
           <div>
             <p className="text-lg font-bold leading-none">VocabVerse</p>
-            <p className="mt-1 text-xs font-medium text-muted-foreground">Learn with rhythm</p>
+            <p className="mt-1 text-xs font-medium text-muted-foreground">Learn with VocabVerse</p>
           </div>
         </NavLink>
 
-        <nav className="mt-8 flex flex-1 flex-col gap-1" aria-label="Main navigation">
-          {navigation.map((item) => (
+        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto pr-1" aria-label="Main navigation">
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -32,11 +32,19 @@ export function getShadowingLessonTitle(lesson) {
 }
 
 export function getShadowingLessonDescription(lesson) {
-  return lesson?.description || 'Practice listening, rhythm, and pronunciation with bilingual subtitles.'
+  return lesson?.description || 'Practice listening, VocabVerse, and pronunciation with bilingual subtitles.'
+}
+
+export function getShadowingVideoUrl(lesson) {
+  return lesson?.videoUrl || lesson?.videoURL || lesson?.video_url || lesson?.mediaUrl || lesson?.mediaURL || lesson?.url || ''
+}
+
+export function getShadowingThumbnailUrl(lesson) {
+  return lesson?.thumbnailUrl || lesson?.thumbnailURL || lesson?.thumbnail_url || lesson?.posterUrl || lesson?.posterURL || ''
 }
 
 export function getShadowingStatus(lesson) {
-  return lesson?.status || 'READY'
+  return String(lesson?.status || 'READY').toUpperCase()
 }
 
 export function getStatusBadgeVariant(status) {
@@ -75,8 +83,8 @@ export function normalizeSubtitleLines(lesson) {
   if (typeof raw === 'string') {
     return raw.split('\n').map((line, index) => ({
       id: index,
-      startTime: index * 4,
-      endTime: index * 4 + 4,
+      startTimeMs: index * 4000,
+      endTimeMs: index * 4000 + 4000,
       englishText: line.trim(),
       vietnameseText: '',
     })).filter((line) => line.englishText)
@@ -87,15 +95,19 @@ export function normalizeSubtitleLines(lesson) {
   return raw.map((line, index) => ({
     ...line,
     id: line?.id ?? index,
-    startTime: Number(line?.startTime ?? line?.start ?? index * 4),
-    endTime: Number(line?.endTime ?? line?.end ?? (Number(line?.startTime ?? line?.start ?? index * 4) + 4)),
+    startTimeMs: Number(line?.startTimeMs ?? line?.startTime ?? line?.start ?? index * 4000),
+    endTimeMs: Number(line?.endTimeMs ?? line?.endTime ?? line?.end ?? (Number(line?.startTimeMs ?? line?.startTime ?? line?.start ?? index * 4000) + 4000)),
     englishText: line?.englishText || line?.english || line?.text || '',
     vietnameseText: line?.vietnameseText || line?.vietnamese || line?.translation || '',
-  }))
+  })).sort((a, b) => {
+    const left = Number(a.orderIndex ?? a.startTimeMs ?? 0)
+    const right = Number(b.orderIndex ?? b.startTimeMs ?? 0)
+    return left - right
+  })
 }
 
-export function getCurrentSubtitleLine(lines, currentTime) {
-  return lines.find((line) => currentTime >= line.startTime && currentTime < line.endTime) || lines[0] || null
+export function getCurrentSubtitleLine(lines, currentTimeMs) {
+  return lines.find((line) => currentTimeMs >= line.startTimeMs && currentTimeMs <= line.endTimeMs) || lines[0] || null
 }
 
 export function isAdminUser(user) {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -346,9 +347,11 @@ function CompletionScreen({ questions, feedbackByQuestion, session, onRestart })
 }
 
 export default function TypingPage() {
-  const [source, setSource] = useState('ALL')
-  const [collectionId, setCollectionId] = useState('')
-  const [sessionId, setSessionId] = useState(null)
+  const location = useLocation()
+  const initialSessionState = location.state || {}
+  const [source, setSource] = useState(initialSessionState.source || 'ALL')
+  const [collectionId, setCollectionId] = useState(initialSessionState.collectionId || '')
+  const [sessionId, setSessionId] = useState(initialSessionState.sessionId || null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [feedbackByQuestion, setFeedbackByQuestion] = useState({})
   const [completed, setCompleted] = useState(false)

@@ -1,4 +1,4 @@
-export type ShadowingSourceType = 'UPLOAD' | 'YOUTUBE' | 'VIDEO' | 'AUDIO' | string
+export type ShadowingSourceType = 'UPLOAD' | 'VIDEO' | 'AUDIO' | string
 
 export type ShadowingStatus = 'PROCESSING' | 'READY' | 'COMPLETED' | 'FAILED' | 'PUBLISHED' | string
 
@@ -6,6 +6,9 @@ export type ShadowingDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | string
 
 export type ShadowingSubtitleLine = {
   id?: string | number
+  subtitleId?: string | number
+  startTimeMs?: number
+  endTimeMs?: number
   startTime?: number
   endTime?: number
   start?: number
@@ -17,6 +20,7 @@ export type ShadowingSubtitleLine = {
   vietnameseText?: string
   vietnamese?: string
   translation?: string
+  orderIndex?: number
 }
 
 export type ShadowingLesson = {
@@ -33,6 +37,13 @@ export type ShadowingLesson = {
   thumbnailUrl?: string
   videoUrl?: string
   audioUrl?: string
+  originalFilename?: string
+  cloudinaryPublicId?: string
+  storageProvider?: string
+  contentType?: string
+  fileSize?: number
+  subtitleCount?: number
+  errorMessage?: string | null
   transcript?: string | ShadowingSubtitleLine[]
   subtitles?: ShadowingSubtitleLine[]
   subtitleLines?: ShadowingSubtitleLine[]
@@ -65,12 +76,6 @@ export type ShadowingLessonQueryParams = {
 
 export type UploadShadowingLessonRequest = {
   file: File
-  title?: string
-  description?: string
-}
-
-export type CreateYoutubeShadowingLessonRequest = {
-  youtubeUrl: string
   title?: string
   description?: string
 }

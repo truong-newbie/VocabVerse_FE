@@ -31,6 +31,8 @@ import {
   getShadowingLessonId,
   getShadowingLessonTitle,
   getShadowingStatus,
+  getShadowingThumbnailUrl,
+  getShadowingVideoUrl,
   getStatusBadgeVariant,
   normalizeShadowingLessonList,
   normalizeSubtitleLines,
@@ -39,7 +41,7 @@ import {
 import { useShadowingLesson, useShadowingLessons } from '@/features/shadowing/useShadowing'
 
 const difficultyFilters = ['ALL', 'EASY', 'MEDIUM', 'HARD']
-const statusFilters = ['ALL', 'READY', 'PROCESSING', 'FAILED', 'COMPLETED']
+const playbackSpeeds = [0.75, 1, 1.25]
 
 function ShadowingSkeleton() {
   return (
@@ -76,12 +78,13 @@ function ShadowingLessonCard({ lesson, onOpen }) {
   const title = getShadowingLessonTitle(lesson)
   const status = getShadowingStatus(lesson)
   const lessonId = getShadowingLessonId(lesson)
+  const thumbnailUrl = getShadowingThumbnailUrl(lesson)
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-card text-card-foreground shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative h-44 bg-muted">
-        {lesson.thumbnailUrl ? (
-          <img src={lesson.thumbnailUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+        {thumbnailUrl ? (
+          <img src={thumbnailUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
         ) : (
           <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/15 via-muted to-success/10">
             <FiVideo aria-hidden="true" className="h-12 w-12 text-primary" />
@@ -113,25 +116,32 @@ function ShadowingLessonCard({ lesson, onOpen }) {
   )
 }
 
+function formatSubtitleTime(value) {
+  const totalMs = Number(value ?? 0)
+  if (!Number.isFinite(totalMs)) return '0:00'
+  const minutes = Math.floor(totalMs / 60000)
+  const seconds = Math.floor((totalMs % 60000) / 1000)
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
 function ShadowingListPage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
   const [difficulty, setDifficulty] = useState('ALL')
-  const [status, setStatus] = useState('ALL')
   const lessonsQuery = useShadowingLessons({ page, size: SHADOWING_PAGE_SIZE })
   const normalized = normalizeShadowingLessonList(lessonsQuery.data, SHADOWING_PAGE_SIZE)
 
   const filteredLessons = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return normalized.items.filter((lesson) => {
+      const isReady = getShadowingStatus(lesson) === 'COMPLETED'
       const haystack = [getShadowingLessonTitle(lesson), getShadowingLessonDescription(lesson), lesson.sourceType, lesson.status, lesson.difficulty].filter(Boolean).join(' ').toLowerCase()
       const matchesSearch = !keyword || haystack.includes(keyword)
       const matchesDifficulty = difficulty === 'ALL' || lesson.difficulty === difficulty
-      const matchesStatus = status === 'ALL' || getShadowingStatus(lesson) === status
-      return matchesSearch && matchesDifficulty && matchesStatus
+      return isReady && matchesSearch && matchesDifficulty
     })
-  }, [difficulty, normalized.items, search, status])
+  }, [difficulty, normalized.items, search])
 
   if (lessonsQuery.isLoading) return <ShadowingSkeleton />
 
@@ -151,7 +161,7 @@ function ShadowingListPage() {
       <PageHeader
         eyebrow="Shadowing library"
         title="Shadowing"
-        description="Practice listening, rhythm, and pronunciation with focused bilingual media lessons."
+        description="Practice listening, VocabVerse, and pronunciation with focused bilingual media lessons."
       />
 
       <section className="rounded-[28px] border border-border bg-card p-6 shadow-sm">
@@ -170,7 +180,7 @@ function ShadowingListPage() {
       </section>
 
       <section className="rounded-card border border-border bg-card p-4 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[1fr_auto_auto] xl:items-center">
+        <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-center">
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3">
             <FiSearch aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
             <input
@@ -184,9 +194,6 @@ function ShadowingListPage() {
           <select className="h-11 rounded-button border border-input bg-background px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20" value={difficulty} onChange={(event) => setDifficulty(event.target.value)} aria-label="Filter by difficulty">
             {difficultyFilters.map((item) => <option key={item} value={item}>{item === 'ALL' ? 'All difficulties' : item}</option>)}
           </select>
-          <select className="h-11 rounded-button border border-input bg-background px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20" value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter by status">
-            {statusFilters.map((item) => <option key={item} value={item}>{item === 'ALL' ? 'All statuses' : item}</option>)}
-          </select>
         </div>
       </section>
 
@@ -199,9 +206,9 @@ function ShadowingListPage() {
       ) : (
         <EmptyState
           icon={FiMic}
-          title={search || difficulty !== 'ALL' || status !== 'ALL' ? 'No shadowing lessons match your filters' : 'No shadowing videos available'}
-          description={search || difficulty !== 'ALL' || status !== 'ALL' ? 'Try a different search, difficulty, or status filter.' : 'Please check again later.'}
-          action={search || difficulty !== 'ALL' || status !== 'ALL' ? <Button onClick={() => { setSearch(''); setDifficulty('ALL'); setStatus('ALL') }}>Clear filters</Button> : null}
+          title={search || difficulty !== 'ALL' ? 'No completed shadowing lessons match your filters' : 'No completed shadowing videos available'}
+          description={search || difficulty !== 'ALL' ? 'Try a different search or difficulty filter.' : 'Please check again later.'}
+          action={search || difficulty !== 'ALL' ? <Button onClick={() => { setSearch(''); setDifficulty('ALL') }}>Clear filters</Button> : null}
         />
       )}
 
@@ -223,28 +230,37 @@ function ShadowingListPage() {
 function ShadowingDetailPage({ lessonId }) {
   const navigate = useNavigate()
   const mediaRef = useRef(null)
-  const [currentTime, setCurrentTime] = useState(0)
+  const [currentTimeMs, setCurrentTimeMs] = useState(0)
   const [currentLineIndex, setCurrentLineIndex] = useState(0)
   const [practicedLines, setPracticedLines] = useState({})
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [showVietnamese, setShowVietnamese] = useState(true)
   const lessonQuery = useShadowingLesson(lessonId, { enabled: Boolean(lessonId) })
   const lesson = lessonQuery.data
+  const videoUrl = getShadowingVideoUrl(lesson)
+  const thumbnailUrl = getShadowingThumbnailUrl(lesson)
   const subtitleLines = useMemo(() => normalizeSubtitleLines(lesson), [lesson])
-  const timedCurrentLine = getCurrentSubtitleLine(subtitleLines, currentTime)
+  const timedCurrentLine = getCurrentSubtitleLine(subtitleLines, currentTimeMs)
   const currentLine = subtitleLines[currentLineIndex] || timedCurrentLine
 
   const seekToLine = (line, index) => {
     if (!line) return
     setCurrentLineIndex(index)
     if (mediaRef.current) {
-      mediaRef.current.currentTime = line.startTime
+      mediaRef.current.currentTime = Number(line.startTimeMs || 0) / 1000
       mediaRef.current.play?.()
     }
   }
 
   const replayCurrentLine = () => {
     if (!currentLine || !mediaRef.current) return
-    mediaRef.current.currentTime = currentLine.startTime
+    mediaRef.current.currentTime = Number(currentLine.startTimeMs || 0) / 1000
     mediaRef.current.play?.()
+  }
+
+  const updatePlaybackRate = (value) => {
+    setPlaybackRate(value)
+    if (mediaRef.current) mediaRef.current.playbackRate = value
   }
 
   const markCurrentLinePracticed = () => {
@@ -259,9 +275,9 @@ function ShadowingDetailPage({ lessonId }) {
   }
 
   const handleTimeUpdate = () => {
-    const nextTime = mediaRef.current?.currentTime || 0
-    setCurrentTime(nextTime)
-    const nextIndex = subtitleLines.findIndex((line) => nextTime >= line.startTime && nextTime < line.endTime)
+    const nextTimeMs = (mediaRef.current?.currentTime || 0) * 1000
+    setCurrentTimeMs(nextTimeMs)
+    const nextIndex = subtitleLines.findIndex((line) => nextTimeMs >= line.startTimeMs && nextTimeMs <= line.endTimeMs)
     if (nextIndex >= 0) setCurrentLineIndex(nextIndex)
   }
 
@@ -302,21 +318,21 @@ function ShadowingDetailPage({ lessonId }) {
 
       <section className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="rounded-[28px] border border-border bg-card p-4 shadow-sm">
-          {lesson.videoUrl ? (
-            <video ref={mediaRef} className="aspect-video w-full rounded-[22px] bg-slate-950" src={lesson.videoUrl} poster={lesson.thumbnailUrl} controls onTimeUpdate={handleTimeUpdate} />
+          {videoUrl ? (
+            <video ref={mediaRef} className="aspect-video w-full rounded-[22px] bg-slate-950" src={videoUrl} poster={thumbnailUrl} controls onTimeUpdate={handleTimeUpdate} onLoadedMetadata={() => updatePlaybackRate(playbackRate)} />
           ) : lesson.audioUrl ? (
             <div className="rounded-[22px] bg-muted p-8">
               <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[32px] bg-primary/10 text-primary">
                 <FiVolume2 aria-hidden="true" className="h-12 w-12" />
               </div>
-              <audio ref={mediaRef} className="mt-8 w-full" src={lesson.audioUrl} controls onTimeUpdate={handleTimeUpdate} />
+            <audio ref={mediaRef} className="mt-8 w-full" src={lesson.audioUrl} controls onTimeUpdate={handleTimeUpdate} onLoadedMetadata={() => updatePlaybackRate(playbackRate)} />
             </div>
           ) : (
             <div className="flex aspect-video items-center justify-center rounded-[22px] bg-muted text-center">
               <div>
                 <FiVideo aria-hidden="true" className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 font-semibold">No media URL provided</p>
-                <p className="mt-1 text-sm text-muted-foreground">The backend did not return videoUrl or audioUrl.</p>
+                <p className="mt-1 text-sm text-muted-foreground">The backend did not return videoUrl, video_url, mediaUrl, url, or audioUrl.</p>
               </div>
             </div>
           )}
@@ -324,11 +340,15 @@ function ShadowingDetailPage({ lessonId }) {
           <div className="mt-4 rounded-[22px] border border-border bg-background/70 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Current subtitle</p>
             <h2 className="mt-3 text-3xl font-black leading-tight">{currentLine?.englishText || lesson.englishSubtitle || 'No English subtitle available.'}</h2>
-            <p className="mt-3 text-lg font-semibold text-muted-foreground">{currentLine?.vietnameseText || lesson.vietnameseSubtitle || 'No Vietnamese subtitle available.'}</p>
+            {showVietnamese ? <p className="mt-3 text-lg font-semibold text-muted-foreground">{currentLine?.vietnameseText || lesson.vietnameseSubtitle || 'No Vietnamese subtitle available.'}</p> : null}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             <Button onClick={replayCurrentLine} disabled={!currentLine}><FiRefreshCw aria-hidden="true" /> Replay Sentence</Button>
+            {playbackSpeeds.map((speed) => (
+              <Button key={speed} variant={playbackRate === speed ? 'primary' : 'secondary'} onClick={() => updatePlaybackRate(speed)}>{speed}x</Button>
+            ))}
+            <Button variant="secondary" onClick={() => setShowVietnamese((value) => !value)}>{showVietnamese ? 'Hide VI' : 'Show VI'}</Button>
             <Button variant="secondary" onClick={markCurrentLinePracticed} disabled={!currentLine}><FiCheckCircle aria-hidden="true" /> Mark As Practiced</Button>
             <Button variant="secondary" onClick={nextLine} disabled={!subtitleLines.length}>Next Sentence <FiChevronRight aria-hidden="true" /></Button>
           </div>
@@ -348,11 +368,11 @@ function ShadowingDetailPage({ lessonId }) {
                     onClick={() => seekToLine(line, index)}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <Badge variant={isActive ? 'primary' : 'secondary'}>{formatDuration(line.startTime)}</Badge>
+                      <Badge variant={isActive ? 'primary' : 'secondary'}>{formatSubtitleTime(line.startTimeMs)}</Badge>
                       {isPracticed ? <Badge variant="success">Practiced</Badge> : null}
                     </div>
                     <p className="mt-3 font-semibold leading-6">{line.englishText}</p>
-                    {line.vietnameseText ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{line.vietnameseText}</p> : null}
+                    {showVietnamese && line.vietnameseText ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{line.vietnameseText}</p> : null}
                   </button>
                 )
               })}

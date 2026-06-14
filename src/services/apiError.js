@@ -20,7 +20,7 @@ export function normalizeApiError(error) {
     name: 'ApiError',
     message,
     status: response?.status,
-    code: payload?.code,
+    code: payload?.code || payload?.errorCode,
     details: payload,
     isAuthError: response?.status === 401,
   }

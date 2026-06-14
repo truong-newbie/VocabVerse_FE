@@ -3,6 +3,7 @@ import type { Vocabulary, VocabularyListResponse } from './vocabulary'
 export type PublicOwner = {
   id?: string | number
   displayName?: string
+  fullName?: string
   username?: string
   name?: string
   avatarUrl?: string
@@ -15,7 +16,11 @@ export type PublicCollection = {
   description?: string
   visibility?: 'PUBLIC' | string
   owner?: PublicOwner
+  ownerName?: string
+  publisherName?: string
+  authorName?: string
   ownerDisplayName?: string
+  createdByName?: string
   createdBy?: PublicOwner | string
   totalVocabularyCount?: number
   totalVocabularies?: number
@@ -55,6 +60,12 @@ export type PublicCollectionVocabularyListResponse = VocabularyListResponse
 export type ClonePublicCollectionResponse = {
   id?: string | number
   collectionId?: string | number
+  collection?: { id?: string | number }
+  clonedCollection?: { id?: string | number }
+  data?: {
+    id?: string | number
+    collectionId?: string | number
+  }
   title?: string
   name?: string
   visibility?: 'PRIVATE' | string

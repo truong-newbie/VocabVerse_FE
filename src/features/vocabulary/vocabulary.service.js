@@ -9,6 +9,8 @@ const COLLECTIONS_BASE = '/collections'
  * @typedef {import('@/types/vocabulary').VocabularyListResponse} VocabularyListResponse
  * @typedef {import('@/types/vocabulary').VocabularyQueryParams} VocabularyQueryParams
  * @typedef {import('@/types/vocabulary').CreateVocabularyRequest} CreateVocabularyRequest
+ * @typedef {import('@/types/vocabulary').BulkCreateVocabularyRequest} BulkCreateVocabularyRequest
+ * @typedef {import('@/types/vocabulary').BulkCreateVocabularyResponse} BulkCreateVocabularyResponse
  * @typedef {import('@/types/vocabulary').UpdateVocabularyRequest} UpdateVocabularyRequest
  */
 
@@ -68,6 +70,12 @@ export const vocabularyService = {
         size: params.size ?? 10,
       },
     })
+    return unwrapApiResponse(response)
+  },
+
+  /** @param {string | number} collectionId @param {BulkCreateVocabularyRequest} payload @returns {Promise<BulkCreateVocabularyResponse>} */
+  async bulkCreateCollectionVocabularies(collectionId, payload) {
+    const response = await apiClient.post(`${COLLECTIONS_BASE}/${collectionId}/vocabularies/bulk`, payload)
     return unwrapApiResponse(response)
   },
 }

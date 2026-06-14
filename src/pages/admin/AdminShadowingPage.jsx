@@ -1,277 +1,375 @@
-import { useState } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { z } from 'zod'
-import { FiAlertTriangle, FiCheckCircle, FiClock, FiLink, FiUpload, FiVideo } from 'react-icons/fi'
-import Badge from '@/components/ui/Badge'
+import { FiCpu, FiEdit3, FiRefreshCw, FiSave, FiTrash2, FiUpload, FiVideo } from 'react-icons/fi'
+import AdminDataTable from '@/components/admin/AdminDataTable'
+import AdminPageShell from '@/components/admin/AdminPageShell'
+import StatusBadge from '@/components/admin/StatusBadge'
 import Button from '@/components/ui/Button'
-import DashboardSection from '@/components/dashboard/DashboardSection'
-import ErrorFallback from '@/components/common/ErrorFallback'
-import PageHeader from '@/components/common/PageHeader'
-import ResponsiveContentContainer from '@/components/common/ResponsiveContentContainer'
-import StatCard from '@/components/common/StatCard'
-import { useAuthStore } from '@/app/store/authStore'
-import { useCurrentUser } from '@/features/auth/useCurrentUser'
+import { extractList, extractTotalPages, formatDate, getId } from '@/features/admin/adminUtils'
 import {
-  getShadowingLessonId,
-  getStatusBadgeVariant,
-  isAdminUser,
-} from '@/features/shadowing/shadowingUtils'
-import {
-  useCreateYoutubeShadowingLesson,
-  useShadowingProcessingStatus,
-  useUploadShadowingLesson,
-} from '@/features/shadowing/useShadowing'
+  useAdminShadowingLessons,
+  useAdminShadowingProcessingStatus,
+  useAdminShadowingSubtitles,
+  useAdminUploadShadowingLesson,
+  useCreateAdminShadowingSubtitle,
+  useDeleteAdminShadowingSubtitle,
+  useGenerateAiAdminShadowingSubtitles,
+  useImportAdminShadowingSubtitles,
+  useUpdateAdminShadowingSubtitle,
+} from '@/features/admin/useAdmin'
 
-const youtubeSchema = z.object({
-  youtubeUrl: z.string().trim().url('Enter a valid YouTube URL').refine((value) => {
-    try {
-      const url = new URL(value)
-      return ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com'].includes(url.hostname)
-    } catch {
-      return false
-    }
-  }, 'Only YouTube URLs are supported.'),
-  title: z.string().trim().optional(),
-  description: z.string().trim().optional(),
-})
+const pageSize = 20
+const emptySubtitleForm = {
+  startTimeMs: '',
+  endTimeMs: '',
+  englishText: '',
+  vietnameseText: '',
+  orderIndex: '',
+}
+const importExample = JSON.stringify({
+  replaceExisting: true,
+  items: [
+    {
+      startTimeMs: 1200,
+      endTimeMs: 4300,
+      englishText: 'I want to improve my speaking.',
+      vietnameseText: 'Toi muon cai thien kha nang noi cua minh.',
+      orderIndex: 0,
+    },
+  ],
+}, null, 2)
 
-function AdminAccessDenied() {
-  return (
-    <ResponsiveContentContainer className="space-y-8">
-      <PageHeader title="Admin Shadowing" description="Admin-only lesson upload and processing tools." />
-      <ErrorFallback
-        title="Admin access required"
-        description="This page is hidden from normal users. Sign in with an admin account to upload or process shadowing lessons."
-      />
-    </ResponsiveContentContainer>
-  )
+function normalizeSubtitleList(payload) {
+  if (Array.isArray(payload)) return payload
+  return payload?.content || payload?.items || payload?.data || payload?.subtitles || []
 }
 
-function ProcessingStatusPanel({ lessonId }) {
-  const statusQuery = useShadowingProcessingStatus(lessonId, { enabled: Boolean(lessonId) })
-  const status = statusQuery.data?.status || 'PROCESSING'
-  const progress = Number(statusQuery.data?.progress ?? 0)
+function getLessonTitle(lesson) {
+  return lesson?.title || lesson?.name || 'Lesson ' + (getId(lesson) || '')
+}
 
-  if (!lessonId) {
-    return (
-      <DashboardSection title="Processing status" description="Upload or create a YouTube lesson to start tracking processing.">
-        <div className="rounded-2xl bg-muted p-5 text-sm leading-6 text-muted-foreground">
-          No processing lesson selected yet.
-        </div>
-      </DashboardSection>
-    )
+function getLessonVideoUrl(lesson) {
+  return lesson?.videoUrl || lesson?.videoURL || lesson?.video_url || lesson?.mediaUrl || lesson?.mediaURL || lesson?.url || ''
+}
+
+function getLessonThumbnailUrl(lesson) {
+  return lesson?.thumbnailUrl || lesson?.thumbnailURL || lesson?.thumbnail_url || lesson?.posterUrl || lesson?.posterURL || ''
+}
+
+function getSubtitleId(subtitle) {
+  return subtitle?.id ?? subtitle?.subtitleId
+}
+
+function formatMs(value) {
+  const totalMs = Number(value ?? 0)
+  if (!Number.isFinite(totalMs)) return '0:00.000'
+  const minutes = Math.floor(totalMs / 60000)
+  const seconds = Math.floor((totalMs % 60000) / 1000)
+  const ms = Math.floor(totalMs % 1000)
+  return minutes + ':' + String(seconds).padStart(2, '0') + '.' + String(ms).padStart(3, '0')
+}
+
+function normalizeSubtitlePayload(item, fallbackOrderIndex = 0) {
+  const startTimeMs = Number(item.startTimeMs)
+  const endTimeMs = Number(item.endTimeMs)
+  const orderIndex = item.orderIndex === undefined || item.orderIndex === null || item.orderIndex === ''
+    ? fallbackOrderIndex
+    : Number(item.orderIndex)
+  const englishText = String(item.englishText || '').trim()
+  const vietnameseText = String(item.vietnameseText || '').trim()
+
+  if (!Number.isFinite(startTimeMs) || !Number.isFinite(endTimeMs)) throw new Error('Start and end time must be numbers in milliseconds')
+  if (endTimeMs <= startTimeMs) throw new Error('endTimeMs must be greater than startTimeMs')
+  if (!englishText) throw new Error('englishText is required')
+  if (!Number.isFinite(orderIndex)) throw new Error('orderIndex must be a number')
+
+  return {
+    startTimeMs,
+    endTimeMs,
+    englishText,
+    vietnameseText,
+    orderIndex,
   }
+}
 
-  return (
-    <DashboardSection
-      title="Processing status"
-      description="Status is polled while the lesson is PROCESSING."
-      actions={<Button variant="secondary" onClick={() => statusQuery.refetch()} disabled={statusQuery.isFetching}>Refresh</Button>}
-    >
-      {statusQuery.error ? (
-        <ErrorFallback title="Unable to load processing status" description={statusQuery.error.message} onRetry={() => statusQuery.refetch()} />
-      ) : (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Lesson ID" value={lessonId} icon={FiVideo} tone="primary" />
-            <StatCard label="Status" value={status} icon={status === 'FAILED' ? FiAlertTriangle : FiCheckCircle} tone={status === 'FAILED' ? 'destructive' : status === 'PROCESSING' ? 'warning' : 'success'} />
-            <StatCard label="Progress" value={`${progress}%`} icon={FiClock} tone="success" />
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
-          </div>
-          <div className="rounded-2xl border border-border bg-background/70 p-4">
-            <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>
-            {statusQuery.data?.message ? <p className="mt-3 text-sm leading-6 text-muted-foreground">{statusQuery.data.message}</p> : null}
-            {statusQuery.data?.error ? <p className="mt-3 text-sm leading-6 text-destructive">{statusQuery.data.error}</p> : null}
-          </div>
-        </div>
-      )}
-    </DashboardSection>
-  )
+function buildSubtitlePayload(form, fallbackOrderIndex = 0) {
+  const startTimeMs = Number(form.startTimeMs)
+  const endTimeMs = Number(form.endTimeMs)
+  const orderIndex = form.orderIndex === '' ? fallbackOrderIndex : Number(form.orderIndex)
+  if (!Number.isFinite(startTimeMs) || !Number.isFinite(endTimeMs)) throw new Error('Start and end time must be numbers in milliseconds')
+  if (endTimeMs <= startTimeMs) throw new Error('endTimeMs must be greater than startTimeMs')
+  if (!form.englishText.trim()) throw new Error('englishText is required')
+  if (!Number.isFinite(orderIndex)) throw new Error('orderIndex must be a number')
+
+  return {
+    startTimeMs,
+    endTimeMs,
+    englishText: form.englishText.trim(),
+    vietnameseText: form.vietnameseText.trim(),
+    orderIndex,
+  }
 }
 
 export default function AdminShadowingPage() {
-  const userFromStore = useAuthStore((state) => state.user)
-  const currentUserQuery = useCurrentUser()
-  const user = currentUserQuery.data || userFromStore
+  const [page, setPage] = useState(0)
   const [uploadFile, setUploadFile] = useState(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
-  const [processingLessonId, setProcessingLessonId] = useState(null)
-  const uploadMutation = useUploadShadowingLesson()
-  const youtubeMutation = useCreateYoutubeShadowingLesson()
-  const youtubeForm = useForm({
-    resolver: zodResolver(youtubeSchema),
-    defaultValues: {
-      youtubeUrl: '',
-      title: '',
-      description: '',
+  const [selectedLesson, setSelectedLesson] = useState(null)
+  const [subtitleForm, setSubtitleForm] = useState(emptySubtitleForm)
+  const [editingSubtitle, setEditingSubtitle] = useState(null)
+  const [importText, setImportText] = useState(importExample)
+
+  const selectedLessonId = getId(selectedLesson)
+  const lessonsQuery = useAdminShadowingLessons({ page, size: pageSize })
+  const uploadMutation = useAdminUploadShadowingLesson()
+  const statusQuery = useAdminShadowingProcessingStatus(selectedLessonId, { enabled: Boolean(selectedLessonId) })
+  const subtitlesQuery = useAdminShadowingSubtitles(selectedLessonId, { enabled: Boolean(selectedLessonId) })
+  const createSubtitleMutation = useCreateAdminShadowingSubtitle()
+  const updateSubtitleMutation = useUpdateAdminShadowingSubtitle()
+  const deleteSubtitleMutation = useDeleteAdminShadowingSubtitle()
+  const importSubtitlesMutation = useImportAdminShadowingSubtitles()
+  const generateAiMutation = useGenerateAiAdminShadowingSubtitles()
+
+  const lessons = extractList(lessonsQuery.data, ['lessons', 'videos'])
+  const totalPages = extractTotalPages(lessonsQuery.data, pageSize)
+  const subtitles = useMemo(() => normalizeSubtitleList(subtitlesQuery.data), [subtitlesQuery.data])
+  const selectedVideoUrl = getLessonVideoUrl(selectedLesson)
+  const selectedThumbnailUrl = getLessonThumbnailUrl(selectedLesson)
+
+  const columns = useMemo(() => [
+    { key: 'title', header: 'Lesson', render: (lesson) => <span className="font-semibold text-white">{getLessonTitle(lesson)}</span> },
+    { key: 'sourceType', header: 'Source', render: (lesson) => lesson.sourceType || lesson.source || 'UPLOAD' },
+    { key: 'status', header: 'Status', render: (lesson) => <StatusBadge status={lesson.status || 'PENDING'} /> },
+    { key: 'subtitleCount', header: 'Subtitles', render: (lesson) => Number(lesson.subtitleCount ?? 0) },
+    { key: 'duration', header: 'Duration', render: (lesson) => lesson.duration || '-' },
+    { key: 'createdAt', header: 'Created At', render: (lesson) => formatDate(lesson.createdAt) },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (lesson) => <Button size="sm" variant="ghost" className="border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => setSelectedLesson(lesson)}>Manage subtitles</Button>,
     },
-  })
-
-  if (currentUserQuery.isLoading && !userFromStore) {
-    return (
-      <ResponsiveContentContainer className="space-y-8">
-        <div className="h-40 animate-pulse rounded-card border border-border bg-card" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-96 animate-pulse rounded-card border border-border bg-card" />
-          <div className="h-96 animate-pulse rounded-card border border-border bg-card" />
-        </div>
-      </ResponsiveContentContainer>
-    )
-  }
-
-  if (!isAdminUser(user)) return <AdminAccessDenied />
+  ], [])
 
   const handleUpload = async (event) => {
     event.preventDefault()
+    const form = event.currentTarget
     if (!uploadFile) {
       toast.error('Select an MP4 file before uploading')
       return
     }
+    if (uploadFile.type && uploadFile.type !== 'video/mp4') {
+      toast.error('Only MP4 uploads are supported')
+      return
+    }
 
     try {
-      const lesson = await uploadMutation.mutateAsync({
-        file: uploadFile,
-        title: uploadTitle.trim(),
-        description: uploadDescription.trim(),
-      })
-      const lessonId = getShadowingLessonId(lesson)
-      if (lessonId) setProcessingLessonId(lessonId)
+      const lesson = await uploadMutation.mutateAsync({ file: uploadFile, title: uploadTitle.trim(), description: uploadDescription.trim() })
+      setSelectedLesson(lesson)
       setUploadFile(null)
       setUploadTitle('')
       setUploadDescription('')
-      event.currentTarget.reset()
-      toast.success('Shadowing lesson upload started')
+      form.reset()
+      toast.success('MP4 uploaded successfully')
     } catch (error) {
-      toast.error(error.message || 'Unable to upload shadowing lesson')
+      toast.error(error.message || 'Unable to upload MP4')
     }
   }
 
-  const handleYoutubeSubmit = async (values) => {
+  const resetSubtitleForm = () => {
+    setSubtitleForm(emptySubtitleForm)
+    setEditingSubtitle(null)
+  }
+
+  const handleSubtitleSubmit = async (event) => {
+    event.preventDefault()
+    if (!selectedLessonId) {
+      toast.error('Select a lesson first')
+      return
+    }
+
     try {
-      const lesson = await youtubeMutation.mutateAsync({
-        youtubeUrl: values.youtubeUrl.trim(),
-        title: values.title?.trim(),
-        description: values.description?.trim(),
-      })
-      const lessonId = getShadowingLessonId(lesson)
-      if (lessonId) setProcessingLessonId(lessonId)
-      youtubeForm.reset()
-      toast.success('YouTube shadowing lesson created')
+      const payload = buildSubtitlePayload(subtitleForm, subtitles.length)
+      if (editingSubtitle) {
+        await updateSubtitleMutation.mutateAsync({ lessonId: selectedLessonId, subtitleId: getSubtitleId(editingSubtitle), payload })
+        toast.success('Subtitle updated')
+      } else {
+        await createSubtitleMutation.mutateAsync({ lessonId: selectedLessonId, payload })
+        toast.success('Subtitle created')
+      }
+      resetSubtitleForm()
     } catch (error) {
-      toast.error(error.message || 'Unable to create YouTube shadowing lesson')
+      toast.error(error.message || 'Unable to save subtitle')
+    }
+  }
+
+  const handleEditSubtitle = (subtitle) => {
+    setEditingSubtitle(subtitle)
+    setSubtitleForm({
+      startTimeMs: String(subtitle.startTimeMs ?? ''),
+      endTimeMs: String(subtitle.endTimeMs ?? ''),
+      englishText: subtitle.englishText || '',
+      vietnameseText: subtitle.vietnameseText || '',
+      orderIndex: subtitle.orderIndex === undefined || subtitle.orderIndex === null ? '' : String(subtitle.orderIndex),
+    })
+  }
+
+  const handleDeleteSubtitle = async (subtitle) => {
+    if (!selectedLessonId) return
+    try {
+      await deleteSubtitleMutation.mutateAsync({ lessonId: selectedLessonId, subtitleId: getSubtitleId(subtitle) })
+      toast.success('Subtitle deleted')
+    } catch (error) {
+      toast.error(error.message || 'Unable to delete subtitle')
+    }
+  }
+
+  const handleImportSubtitles = async () => {
+    if (!selectedLessonId) {
+      toast.error('Select a lesson first')
+      return
+    }
+
+    try {
+      const rawPayload = JSON.parse(importText)
+      const items = Array.isArray(rawPayload) ? rawPayload : rawPayload.items
+      if (!Array.isArray(items)) throw new Error('Import JSON must be an array or include an items array')
+      const normalizedItems = items.map((item, index) => normalizeSubtitlePayload(item, index))
+      await importSubtitlesMutation.mutateAsync({
+        lessonId: selectedLessonId,
+        payload: {
+          replaceExisting: Array.isArray(rawPayload) ? true : Boolean(rawPayload.replaceExisting),
+          items: normalizedItems,
+        },
+      })
+      toast.success('Subtitles imported')
+    } catch (error) {
+      toast.error(error.message || 'Unable to import subtitles')
+    }
+  }
+
+  const handleGenerateAi = async () => {
+    if (!selectedLessonId) {
+      toast.error('Select a lesson first')
+      return
+    }
+
+    try {
+      await generateAiMutation.mutateAsync({ lessonId: selectedLessonId })
+      toast.success('AI subtitles generated')
+    } catch (error) {
+      toast.error(error.message || 'Unable to generate AI subtitles')
     }
   }
 
   return (
-    <ResponsiveContentContainer className="space-y-8">
-      <PageHeader
-        eyebrow="Admin tools"
-        title="Admin Shadowing"
-        description="Upload MP4 lessons or create lessons from YouTube URLs, then track backend processing."
-      />
+    <AdminPageShell
+      eyebrow="Media operations"
+      title="Shadowing Management"
+      description="Upload MP4 lessons to Cloudinary, preview returned videoUrl, and manage bilingual subtitles."
+      error={lessonsQuery.error}
+      onRetry={() => lessonsQuery.refetch()}
+      actions={<Button variant="ghost" className="border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => lessonsQuery.refetch()}><FiRefreshCw aria-hidden="true" /> Refresh</Button>}
+    >
+      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <form className="rounded-2xl border border-white/10 bg-white/[0.035] p-5" onSubmit={handleUpload}>
+          <div className="flex items-center gap-3"><FiUpload className="text-cyan-300" aria-hidden="true" /><h2 className="text-lg font-semibold text-white">Upload MP4</h2></div>
+          <p className="mt-3 text-sm text-slate-400">Only MP4 upload is supported. Cloudinary and AI keys are configured by backend, not FE.</p>
+          <input className="mt-5 h-11 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none" value={uploadTitle} onChange={(event) => setUploadTitle(event.target.value)} placeholder="Lesson title" />
+          <textarea className="mt-3 min-h-24 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none" value={uploadDescription} onChange={(event) => setUploadDescription(event.target.value)} placeholder="Description" />
+          <input className="mt-3 block w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2 file:font-bold file:text-slate-950" type="file" accept="video/mp4" onChange={(event) => setUploadFile(event.target.files?.[0] || null)} />
+          <Button className="mt-4 w-full" type="submit" disabled={uploadMutation.isPending}>{uploadMutation.isPending ? 'Uploading...' : 'Upload MP4 lesson'}</Button>
+        </form>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <DashboardSection title="Upload MP4 lesson" description="Send a local MP4 file with optional title and description.">
-          <form className="space-y-4" onSubmit={handleUpload}>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-upload-title">Title</label>
-              <input
-                id="shadowing-upload-title"
-                className="mt-2 h-11 w-full rounded-button border border-input bg-background px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
-                value={uploadTitle}
-                onChange={(event) => setUploadTitle(event.target.value)}
-                placeholder="Lesson title"
-              />
+        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+          <div className="flex items-center gap-3"><FiVideo className="text-cyan-300" aria-hidden="true" /><h2 className="text-lg font-semibold text-white">Lesson preview</h2></div>
+          {selectedVideoUrl ? (
+            <video className="mt-5 aspect-video w-full rounded-2xl bg-black" src={selectedVideoUrl} poster={selectedThumbnailUrl} controls />
+          ) : (
+            <div className="mt-5 flex aspect-video items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/20 text-sm text-slate-500">Upload or select a lesson to preview videoUrl</div>
+          )}
+          {selectedLesson ? (
+            <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
+              <p><span className="text-slate-500">Lesson:</span> {getLessonTitle(selectedLesson)}</p>
+              <p><span className="text-slate-500">Status:</span> {selectedLesson.status || statusQuery.data?.status || 'UNKNOWN'}</p>
+              <p><span className="text-slate-500">Progress:</span> {Number(statusQuery.data?.progress ?? selectedLesson.progress ?? 0)}%</p>
+              <p><span className="text-slate-500">Subtitles:</span> {selectedLesson.subtitleCount ?? subtitles.length}</p>
             </div>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-upload-description">Description</label>
-              <textarea
-                id="shadowing-upload-description"
-                className="mt-2 min-h-24 w-full rounded-button border border-input bg-background px-4 py-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
-                value={uploadDescription}
-                onChange={(event) => setUploadDescription(event.target.value)}
-                placeholder="Short learning goal or context"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-upload-file">MP4 file</label>
-              <input
-                id="shadowing-upload-file"
-                className="mt-2 block w-full rounded-button border border-input bg-background px-4 py-3 text-sm file:mr-4 file:rounded-button file:border-0 file:bg-primary file:px-4 file:py-2 file:font-semibold file:text-primary-foreground"
-                type="file"
-                accept="video/mp4"
-                onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
-              />
-            </div>
-            <Button className="w-full" type="submit" disabled={uploadMutation.isPending}>
-              <FiUpload aria-hidden="true" /> {uploadMutation.isPending ? 'Uploading...' : 'Upload MP4'}
-            </Button>
-          </form>
-        </DashboardSection>
-
-        <DashboardSection title="Create from YouTube" description="Validate a YouTube URL before sending it to the backend.">
-          <form className="space-y-4" onSubmit={youtubeForm.handleSubmit(handleYoutubeSubmit)}>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-youtube-url">YouTube URL</label>
-              <input
-                id="shadowing-youtube-url"
-                className="mt-2 h-11 w-full rounded-button border border-input bg-background px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
-                placeholder="https://www.youtube.com/watch?v=..."
-                {...youtubeForm.register('youtubeUrl')}
-              />
-              {youtubeForm.formState.errors.youtubeUrl ? <p className="mt-2 text-sm font-semibold text-destructive">{youtubeForm.formState.errors.youtubeUrl.message}</p> : null}
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-youtube-title">Title</label>
-              <input
-                id="shadowing-youtube-title"
-                className="mt-2 h-11 w-full rounded-button border border-input bg-background px-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
-                placeholder="Optional title"
-                {...youtubeForm.register('title')}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-foreground" htmlFor="shadowing-youtube-description">Description</label>
-              <textarea
-                id="shadowing-youtube-description"
-                className="mt-2 min-h-24 w-full rounded-button border border-input bg-background px-4 py-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
-                placeholder="Optional description"
-                {...youtubeForm.register('description')}
-              />
-            </div>
-            <Button className="w-full" type="submit" disabled={youtubeMutation.isPending}>
-              <FiLink aria-hidden="true" /> {youtubeMutation.isPending ? 'Creating...' : 'Create YouTube Lesson'}
-            </Button>
-          </form>
-        </DashboardSection>
+          ) : null}
+          {statusQuery.error ? <p className="mt-4 text-sm text-rose-200">{statusQuery.error.message}</p> : null}
+        </section>
       </section>
 
-      <ProcessingStatusPanel lessonId={processingLessonId} />
+      {selectedLessonId ? (
+        <section className="mt-5 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Subtitle tools</p>
+                <h2 className="mt-2 text-lg font-semibold text-white">{getLessonTitle(selectedLesson)}</h2>
+              </div>
+              <Button type="button" onClick={handleGenerateAi} disabled={generateAiMutation.isPending}><FiCpu aria-hidden="true" /> {generateAiMutation.isPending ? 'Generating...' : 'Generate AI Subtitle'}</Button>
+            </div>
 
-      <DashboardSection title="Admin security boundary" description="This UI is only rendered for admin roles.">
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-muted p-4">
-            <FiCheckCircle aria-hidden="true" className="h-5 w-5 text-success" />
-            <p className="mt-3 font-semibold">No user id sent</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">Admin actions rely on backend auth context.</p>
+            <form className="mt-5 grid gap-3" onSubmit={handleSubtitleSubmit}>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <input className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm text-white outline-none" value={subtitleForm.startTimeMs} onChange={(event) => setSubtitleForm((current) => ({ ...current, startTimeMs: event.target.value }))} placeholder="startTimeMs" />
+                <input className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm text-white outline-none" value={subtitleForm.endTimeMs} onChange={(event) => setSubtitleForm((current) => ({ ...current, endTimeMs: event.target.value }))} placeholder="endTimeMs" />
+                <input className="h-11 rounded-xl border border-white/10 bg-black/20 px-3 text-sm text-white outline-none" value={subtitleForm.orderIndex} onChange={(event) => setSubtitleForm((current) => ({ ...current, orderIndex: event.target.value }))} placeholder="orderIndex" />
+              </div>
+              <textarea className="min-h-20 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white outline-none" value={subtitleForm.englishText} onChange={(event) => setSubtitleForm((current) => ({ ...current, englishText: event.target.value }))} placeholder="englishText (required)" />
+              <textarea className="min-h-20 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm text-white outline-none" value={subtitleForm.vietnameseText} onChange={(event) => setSubtitleForm((current) => ({ ...current, vietnameseText: event.target.value }))} placeholder="vietnameseText (optional)" />
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={createSubtitleMutation.isPending || updateSubtitleMutation.isPending}><FiSave aria-hidden="true" /> {editingSubtitle ? 'Update subtitle' : 'Create subtitle'}</Button>
+                {editingSubtitle ? <Button type="button" variant="ghost" className="border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white" onClick={resetSubtitleForm}>Cancel edit</Button> : null}
+              </div>
+            </form>
+
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-white">Import JSON</p>
+              <p className="mt-1 text-xs text-slate-500">Paste JSON with replaceExisting and items. Set replaceExisting=false to append.</p>
+              <textarea className="mt-3 min-h-56 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 font-mono text-xs text-slate-200 outline-none" value={importText} onChange={(event) => setImportText(event.target.value)} />
+              <Button className="mt-3" type="button" variant="secondary" onClick={handleImportSubtitles} disabled={importSubtitlesMutation.isPending}>{importSubtitlesMutation.isPending ? 'Importing...' : 'Import subtitles'}</Button>
+            </div>
           </div>
-          <div className="rounded-2xl bg-muted p-4">
-            <FiCheckCircle aria-hidden="true" className="h-5 w-5 text-success" />
-            <p className="mt-3 font-semibold">Multipart upload</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">MP4 upload is sent as FormData through the authenticated API client.</p>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-white">Subtitles ({subtitles.length})</h2>
+              <Button variant="ghost" className="border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => subtitlesQuery.refetch()} disabled={subtitlesQuery.isFetching}><FiRefreshCw aria-hidden="true" /> Refresh subtitles</Button>
+            </div>
+            {subtitlesQuery.isLoading ? <p className="mt-5 text-sm text-slate-400">Loading subtitles...</p> : null}
+            {subtitlesQuery.error ? <p className="mt-5 text-sm text-rose-200">{subtitlesQuery.error.message}</p> : null}
+            <div className="mt-5 max-h-[720px] space-y-3 overflow-y-auto pr-1">
+              {subtitles.map((subtitle, index) => (
+                <article key={getSubtitleId(subtitle) || index} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">#{subtitle.orderIndex ?? index} {formatMs(subtitle.startTimeMs)} - {formatMs(subtitle.endTimeMs)}</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" className="border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => handleEditSubtitle(subtitle)}><FiEdit3 aria-hidden="true" /> Edit</Button>
+                      <Button size="sm" variant="ghost" className="border border-rose-400/20 text-rose-200 hover:bg-rose-400/10" onClick={() => handleDeleteSubtitle(subtitle)} disabled={deleteSubtitleMutation.isPending}><FiTrash2 aria-hidden="true" /> Delete</Button>
+                    </div>
+                  </div>
+                  <p className="mt-3 font-semibold text-white">{subtitle.englishText}</p>
+                  {subtitle.vietnameseText ? <p className="mt-1 text-sm text-slate-400">{subtitle.vietnameseText}</p> : null}
+                </article>
+              ))}
+              {!subtitlesQuery.isLoading && !subtitles.length ? <p className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-slate-500">No subtitles yet. Create, import, or generate AI subtitles.</p> : null}
+            </div>
           </div>
-          <div className="rounded-2xl bg-muted p-4">
-            <FiCheckCircle aria-hidden="true" className="h-5 w-5 text-success" />
-            <p className="mt-3 font-semibold">Validated YouTube URL</p>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">The form rejects non-YouTube URLs before submission.</p>
-          </div>
-        </div>
-      </DashboardSection>
-    </ResponsiveContentContainer>
+        </section>
+      ) : null}
+
+      <AdminDataTable
+        className="mt-5"
+        columns={columns}
+        rows={lessons}
+        isLoading={lessonsQuery.isLoading}
+        emptyTitle="No shadowing lessons"
+        emptyDescription="Upload an MP4 lesson to make it available for user shadowing practice."
+        getRowKey={getId}
+        pagination={{ page, totalPages, isLastPage: page + 1 >= totalPages || lessons.length < pageSize, onPageChange: setPage }}
+      />
+    </AdminPageShell>
   )
 }

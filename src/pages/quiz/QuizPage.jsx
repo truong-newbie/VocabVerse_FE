@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   FiAward,
@@ -369,10 +370,12 @@ function CompletionScreen({ questions, feedbackByQuestion, session, onRestart })
 }
 
 export default function QuizPage() {
-  const [source, setSource] = useState('ALL')
-  const [collectionId, setCollectionId] = useState('')
+  const location = useLocation()
+  const initialSessionState = location.state || {}
+  const [source, setSource] = useState(initialSessionState.source || 'ALL')
+  const [collectionId, setCollectionId] = useState(initialSessionState.collectionId || '')
   const [questionType, setQuestionType] = useState('TERM_TO_MEANING')
-  const [sessionId, setSessionId] = useState(null)
+  const [sessionId, setSessionId] = useState(initialSessionState.sessionId || null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [feedbackByQuestion, setFeedbackByQuestion] = useState({})
