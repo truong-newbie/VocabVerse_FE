@@ -19,6 +19,7 @@ const LEGACY_REVIEW_SETTINGS_PATH = 'review-settings'
  */
 
 function shouldTryLegacyReviewSettings(error) {
+  if (error?.code === 'SCHEDULER_NOT_SUPPORTED') return false
   return [404, 405, 500].includes(Number(error?.status))
 }
 
@@ -95,6 +96,7 @@ export const reviewService = {
       const response = await apiClient.patch(getReviewSettingUrl(collectionId), payload)
       return unwrapApiResponse(response)
     } catch (error) {
+      if (payload.schedulerType === 'FSRS') throw error
       if (!shouldTryLegacyReviewSettings(error)) throw error
       const response = await apiClient.put(getReviewSettingUrl(collectionId, LEGACY_REVIEW_SETTINGS_PATH), toLegacyReviewSettingsPayload(payload))
       return unwrapApiResponse(response)

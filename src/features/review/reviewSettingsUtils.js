@@ -20,3 +20,19 @@ export function formatReminderTimeInput(value) {
   if (!value) return '08:00'
   return value.length >= 5 ? value.slice(0, 5) : value
 }
+
+export function getFsrsDesiredRetentionError(value) {
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue) || numberValue < 0.7 || numberValue > 0.98) {
+    return 'Desired retention must be between 70% and 98%.'
+  }
+  return ''
+}
+
+export function getFsrsMaxIntervalDaysError(value) {
+  const numberValue = Number(value)
+  if (!Number.isInteger(numberValue) || numberValue < 1 || numberValue > 3650) {
+    return 'Max interval must be a whole number from 1 to 3650 days.'
+  }
+  return ''
+}
