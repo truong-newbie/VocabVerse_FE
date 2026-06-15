@@ -30,6 +30,7 @@ import {
   getShadowingLessonDescription,
   getShadowingLessonId,
   getShadowingLessonTitle,
+  getShadowingAudioUrl,
   getShadowingStatus,
   getShadowingThumbnailUrl,
   getShadowingVideoUrl,
@@ -238,6 +239,7 @@ function ShadowingDetailPage({ lessonId }) {
   const lessonQuery = useShadowingLesson(lessonId, { enabled: Boolean(lessonId) })
   const lesson = lessonQuery.data
   const videoUrl = getShadowingVideoUrl(lesson)
+  const audioUrl = getShadowingAudioUrl(lesson)
   const thumbnailUrl = getShadowingThumbnailUrl(lesson)
   const subtitleLines = useMemo(() => normalizeSubtitleLines(lesson), [lesson])
   const timedCurrentLine = getCurrentSubtitleLine(subtitleLines, currentTimeMs)
@@ -320,19 +322,19 @@ function ShadowingDetailPage({ lessonId }) {
         <div className="rounded-[28px] border border-border bg-card p-4 shadow-sm">
           {videoUrl ? (
             <video ref={mediaRef} className="aspect-video w-full rounded-[22px] bg-slate-950" src={videoUrl} poster={thumbnailUrl} controls onTimeUpdate={handleTimeUpdate} onLoadedMetadata={() => updatePlaybackRate(playbackRate)} />
-          ) : lesson.audioUrl ? (
+          ) : audioUrl ? (
             <div className="rounded-[22px] bg-muted p-8">
               <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[32px] bg-primary/10 text-primary">
                 <FiVolume2 aria-hidden="true" className="h-12 w-12" />
               </div>
-            <audio ref={mediaRef} className="mt-8 w-full" src={lesson.audioUrl} controls onTimeUpdate={handleTimeUpdate} onLoadedMetadata={() => updatePlaybackRate(playbackRate)} />
+            <audio ref={mediaRef} className="mt-8 w-full" src={audioUrl} controls onTimeUpdate={handleTimeUpdate} onLoadedMetadata={() => updatePlaybackRate(playbackRate)} />
             </div>
           ) : (
             <div className="flex aspect-video items-center justify-center rounded-[22px] bg-muted text-center">
               <div>
                 <FiVideo aria-hidden="true" className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-4 font-semibold">No media URL provided</p>
-                <p className="mt-1 text-sm text-muted-foreground">The backend did not return videoUrl, video_url, mediaUrl, url, or audioUrl.</p>
+                <p className="mt-1 text-sm text-muted-foreground">The backend did not return a usable video, audio, media, file, Cloudinary, or source URL.</p>
               </div>
             </div>
           )}

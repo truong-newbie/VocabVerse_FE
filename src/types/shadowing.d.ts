@@ -36,7 +36,30 @@ export type ShadowingLesson = {
   duration?: number | string
   thumbnailUrl?: string
   videoUrl?: string
+  videoURL?: string
+  video_url?: string
   audioUrl?: string
+  audioURL?: string
+  audio_url?: string
+  mediaUrl?: string
+  mediaURL?: string
+  media_url?: string
+  fileUrl?: string
+  fileURL?: string
+  file_url?: string
+  cloudinaryUrl?: string
+  cloudinaryURL?: string
+  cloudinary_url?: string
+  secureUrl?: string
+  secureURL?: string
+  secure_url?: string
+  sourceUrl?: string
+  sourceURL?: string
+  source_url?: string
+  assetUrl?: string
+  assetURL?: string
+  asset_url?: string
+  url?: string
   originalFilename?: string
   cloudinaryPublicId?: string
   storageProvider?: string

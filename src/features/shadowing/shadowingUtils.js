@@ -36,7 +36,55 @@ export function getShadowingLessonDescription(lesson) {
 }
 
 export function getShadowingVideoUrl(lesson) {
-  return lesson?.videoUrl || lesson?.videoURL || lesson?.video_url || lesson?.mediaUrl || lesson?.mediaURL || lesson?.url || ''
+  return lesson?.videoUrl ||
+    lesson?.videoURL ||
+    lesson?.video_url ||
+    lesson?.mediaUrl ||
+    lesson?.mediaURL ||
+    lesson?.media_url ||
+    lesson?.fileUrl ||
+    lesson?.fileURL ||
+    lesson?.file_url ||
+    lesson?.cloudinaryUrl ||
+    lesson?.cloudinaryURL ||
+    lesson?.cloudinary_url ||
+    lesson?.secureUrl ||
+    lesson?.secureURL ||
+    lesson?.secure_url ||
+    lesson?.sourceUrl ||
+    lesson?.sourceURL ||
+    lesson?.source_url ||
+    lesson?.assetUrl ||
+    lesson?.assetURL ||
+    lesson?.asset_url ||
+    lesson?.url ||
+    ''
+}
+
+export function getShadowingAudioUrl(lesson) {
+  return lesson?.audioUrl ||
+    lesson?.audioURL ||
+    lesson?.audio_url ||
+    lesson?.mediaUrl ||
+    lesson?.mediaURL ||
+    lesson?.media_url ||
+    lesson?.fileUrl ||
+    lesson?.fileURL ||
+    lesson?.file_url ||
+    lesson?.cloudinaryUrl ||
+    lesson?.cloudinaryURL ||
+    lesson?.cloudinary_url ||
+    lesson?.secureUrl ||
+    lesson?.secureURL ||
+    lesson?.secure_url ||
+    lesson?.sourceUrl ||
+    lesson?.sourceURL ||
+    lesson?.source_url ||
+    lesson?.assetUrl ||
+    lesson?.assetURL ||
+    lesson?.asset_url ||
+    lesson?.url ||
+    ''
 }
 
 export function getShadowingThumbnailUrl(lesson) {
