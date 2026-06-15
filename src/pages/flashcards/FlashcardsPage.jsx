@@ -27,7 +27,12 @@ import {
   getAnswerTone,
   getCardExample,
   getCardMeaning,
+  getCardNote,
+  getCardPartOfSpeech,
+  getCardPronunciation,
+  getCardSynonyms,
   getCardTerm,
+  getCardVietnameseMeaning,
   getCardVocabularyId,
   getSessionId,
   normalizeFlashcardCards,
@@ -92,7 +97,14 @@ function ProgressBar({ currentIndex, total, answeredCount }) {
 }
 
 function FlashcardStudyCard({ card, flipped, onFlip }) {
-  const synonyms = normalizeStringList(card?.synonyms)
+  const meaning = getCardMeaning(card)
+  const vietnameseMeaning = getCardVietnameseMeaning(card)
+  const pronunciation = getCardPronunciation(card)
+  const partOfSpeech = getCardPartOfSpeech(card)
+  const example = getCardExample(card)
+  const note = getCardNote(card)
+  const synonyms = normalizeStringList(getCardSynonyms(card))
+  const shouldShowVietnameseMeaning = Boolean(vietnameseMeaning && vietnameseMeaning !== meaning)
 
   return (
     <button
@@ -105,23 +117,23 @@ function FlashcardStudyCard({ card, flipped, onFlip }) {
         <article className="absolute inset-0 flex flex-col justify-center rounded-[28px] border border-border bg-card p-8 text-center shadow-sm [backface-visibility:hidden] sm:p-12">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Front</p>
           <h2 className="mt-6 text-5xl font-black tracking-tight text-foreground sm:text-7xl">{getCardTerm(card)}</h2>
-          {card?.pronunciation ? <p className="mt-4 text-xl font-semibold text-primary">{card.pronunciation}</p> : null}
-          {card?.partOfSpeech ? <Badge className="mx-auto mt-5" variant="secondary">{card.partOfSpeech}</Badge> : null}
+          {pronunciation ? <p className="mt-4 text-xl font-semibold text-primary">{pronunciation}</p> : null}
+          {partOfSpeech ? <Badge className="mx-auto mt-5" variant="secondary">{partOfSpeech}</Badge> : null}
           <p className="mt-8 text-sm text-muted-foreground">Click card or press Space to flip.</p>
         </article>
 
         <article className="absolute inset-0 flex flex-col justify-center rounded-[28px] border border-primary/25 bg-card p-8 shadow-sm [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-10">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Back</p>
-            <h3 className="mt-5 text-3xl font-bold text-foreground">{getCardMeaning(card)}</h3>
-            {card?.vietnameseMeaning ? <p className="mt-3 text-xl font-semibold text-muted-foreground">{card.vietnameseMeaning}</p> : null}
-            {getCardExample(card) ? <p className="mt-6 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">Example: </span>{getCardExample(card)}</p> : null}
+            <h3 className="mt-5 text-3xl font-bold text-foreground">{meaning}</h3>
+            {shouldShowVietnameseMeaning ? <p className="mt-3 text-xl font-semibold text-muted-foreground">{vietnameseMeaning}</p> : null}
+            {example ? <p className="mt-6 rounded-2xl bg-muted p-4 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">Example: </span>{example}</p> : null}
             {synonyms.length ? (
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {synonyms.map((item) => <Badge key={item} variant="success">{item}</Badge>)}
               </div>
             ) : null}
-            {card?.note || card?.memoryTip ? <p className="mt-5 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">Memory tip: </span>{card.note || card.memoryTip}</p> : null}
+            {note ? <p className="mt-5 text-sm leading-6 text-muted-foreground"><span className="font-semibold text-foreground">Memory tip: </span>{note}</p> : null}
           </div>
         </article>
       </div>
