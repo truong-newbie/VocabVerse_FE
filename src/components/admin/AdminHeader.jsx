@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 import { FiArrowLeft, FiLogOut, FiShield } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/authStore'
 import { useLogout } from '@/features/auth/useAuthActions'
+import { notify } from '@/lib/toast'
 import Button from '@/components/ui/Button'
 
 export default function AdminHeader() {
@@ -14,9 +14,9 @@ export default function AdminHeader() {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync()
-      toast.success('Signed out')
+      notify.success('Signed out')
     } catch (error) {
-      toast.error(error.message || 'Signed out locally')
+      notify.error(error, 'Signed out locally')
     } finally {
       navigate('/login', { replace: true })
     }

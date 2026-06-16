@@ -2,11 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
 import FormField from '@/components/forms/FormField'
 import { formInputClass } from '@/components/forms/formStyles'
 import { useRegister } from '@/features/auth/useAuthActions'
+import { notify } from '@/lib/toast'
 
 const registerSchema = z
   .object({
@@ -43,15 +43,15 @@ export default function RegisterPage() {
       const currentUser = await registerMutation.mutateAsync(payload)
 
       if (currentUser) {
-        toast.success('Account created. Welcome to VocabVerse')
+        notify.success('Account created. Welcome to VocabVerse')
         navigate('/dashboard', { replace: true })
         return
       }
 
-      toast.success('Account created. Please log in.')
+      notify.success('Account created. Please log in.')
       navigate('/login', { replace: true })
     } catch (error) {
-      toast.error(error.message || 'Unable to register')
+      notify.error(error, 'Unable to register')
     }
   }
 
