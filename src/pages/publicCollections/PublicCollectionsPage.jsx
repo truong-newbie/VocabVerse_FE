@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { toast } from 'sonner'
 import {
   FiArrowLeft,
   FiBookOpen,
@@ -41,6 +40,7 @@ import {
   usePublicCollectionVocabularies,
 } from '@/features/publicCollection/usePublicCollections'
 import { getVocabularyExample, getVocabularyMeaning, getVocabularyTerm, normalizeVocabularyList } from '@/features/vocabulary/vocabularyUtils'
+import { notify } from '@/lib/toast'
 
 const VOCABULARY_PAGE_SIZE = 10
 
@@ -170,15 +170,18 @@ function PublicCollectionListPage() {
   }, [normalized.items, search])
 
   const handleClone = async (collection) => {
+    const toastId = notify.loading('Cloning public collection...')
     try {
       const response = await cloneMutation.mutateAsync(collection.id)
-      toast.success('Collection cloned to your private library')
+      notify.dismiss(toastId)
+      notify.success('Collection cloned to your private library')
       const clonedCollectionId = getClonedCollectionId(response)
       if (clonedCollectionId) {
         navigate(`/collections/${clonedCollectionId}`)
       }
     } catch (error) {
-      toast.error(error.message || 'Unable to clone public collection')
+      notify.dismiss(toastId)
+      notify.error(error, 'Unable to clone public collection')
     }
   }
 
@@ -278,15 +281,18 @@ function PublicCollectionDetailPage({ collectionId }) {
   const vocabularies = normalizeVocabularyList(vocabulariesQuery.data, VOCABULARY_PAGE_SIZE)
 
   const handleClone = async () => {
+    const toastId = notify.loading('Cloning public collection...')
     try {
       const response = await cloneMutation.mutateAsync(collectionId)
-      toast.success('Collection cloned to your private library')
+      notify.dismiss(toastId)
+      notify.success('Collection cloned to your private library')
       const clonedCollectionId = getClonedCollectionId(response)
       if (clonedCollectionId) {
         navigate(`/collections/${clonedCollectionId}`)
       }
     } catch (error) {
-      toast.error(error.message || 'Unable to clone public collection')
+      notify.dismiss(toastId)
+      notify.error(error, 'Unable to clone public collection')
     }
   }
 

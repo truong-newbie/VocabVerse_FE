@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="VocabVerse icon">
+  <rect width="180" height="180" rx="42" fill="#2563eb"/>
+  <path d="M42 48h34c33 0 60 27 60 60v34h-34c-33 0-60-27-60-60V48Z" fill="#ffffff" opacity=".96"/>
+  <path d="M104 48h34v34c0 33-27 60-60 60H44v-34c0-33 27-60 60-60Z" fill="#16a34a" opacity=".92"/>
+  <path d="M64 69l22 54h14l22-54h-17l-12 32-12-32H64Z" fill="#0f172a"/>
+</svg>

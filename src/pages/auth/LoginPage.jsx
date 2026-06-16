@@ -2,11 +2,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
 import FormField from '@/components/forms/FormField'
 import { formInputClass } from '@/components/forms/formStyles'
 import { useLogin } from '@/features/auth/useAuthActions'
+import { notify } from '@/lib/toast'
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, 'Email is required').email('Enter a valid email address'),
@@ -38,10 +38,10 @@ export default function LoginPage() {
         ? (from?.startsWith('/admin') ? from : '/admin/dashboard')
         : (from && !from.startsWith('/admin') ? from : '/dashboard')
 
-      toast.success('Welcome back to VocabVerse')
+      notify.success('Welcome back to VocabVerse')
       navigate(targetPath, { replace: true })
     } catch (error) {
-      toast.error(error.message || 'Unable to log in')
+      notify.error(error, 'Unable to log in')
     }
   }
 

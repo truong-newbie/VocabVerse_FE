@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 import { FiLogOut, FiMenu, FiMoon, FiSearch, FiSun, FiX } from 'react-icons/fi'
 import { useAuthStore } from '@/app/store/authStore'
 import { useThemeStore } from '@/app/store/themeStore'
 import { useLogout } from '@/features/auth/useAuthActions'
 import { useCurrentUser } from '@/features/auth/useCurrentUser'
+import { notify } from '@/lib/toast'
 import Button from '../ui/Button'
 
 export default function AppHeader({ mobileOpen, onToggleMobile }) {
@@ -21,9 +21,9 @@ export default function AppHeader({ mobileOpen, onToggleMobile }) {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync()
-      toast.success('Signed out')
+      notify.success('Signed out')
     } catch (error) {
-      toast.error(error.message || 'Signed out locally')
+      notify.error(error, 'Signed out locally')
     } finally {
       navigate('/login', { replace: true })
     }

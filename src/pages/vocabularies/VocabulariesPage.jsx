@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 import {
   FiBookOpen,
   FiChevronLeft,
@@ -43,6 +42,7 @@ import {
   useVocabularies,
   useVocabulary,
 } from '@/features/vocabulary/useVocabularies'
+import { notify } from '@/lib/toast'
 
 const PAGE_SIZE = 10
 const ALL_COLLECTIONS = 'ALL'
@@ -100,21 +100,21 @@ function VocabularyDetailDialog({ vocabularyId, collections, onClose }) {
 
     try {
       await addMutation.mutateAsync({ collectionId: selectedCollectionId, vocabularyId })
-      toast.success('Vocabulary added to collection')
+      notify.success('Vocabulary added to collection')
       setSelectedCollectionId('')
       query.refetch()
     } catch (error) {
-      toast.error(error.message || 'Unable to add vocabulary to collection')
+      notify.error(error, 'Unable to add vocabulary to collection')
     }
   }
 
   const handleRemove = async (collectionId) => {
     try {
       await removeMutation.mutateAsync({ collectionId, vocabularyId })
-      toast.success('Vocabulary removed from collection')
+      notify.success('Vocabulary removed from collection')
       query.refetch()
     } catch (error) {
-      toast.error(error.message || 'Unable to remove vocabulary from collection')
+      notify.error(error, 'Unable to remove vocabulary from collection')
     }
   }
 
@@ -238,15 +238,15 @@ export default function VocabulariesPage() {
     try {
       if (formState.mode === 'edit') {
         await updateMutation.mutateAsync({ id: formState.vocabulary.id, payload })
-        toast.success('Vocabulary updated')
+        notify.success('Vocabulary updated')
       } else {
         await createMutation.mutateAsync(payload)
-        toast.success('Vocabulary created')
+        notify.success('Vocabulary created')
         setPage(0)
       }
       closeForm()
     } catch (error) {
-      toast.error(error.message || 'Unable to save vocabulary')
+      notify.error(error, 'Unable to save vocabulary')
     }
   }
 
@@ -255,19 +255,19 @@ export default function VocabulariesPage() {
 
     try {
       await deleteMutation.mutateAsync(deleteTarget.id)
-      toast.success('Vocabulary deleted')
+      notify.success('Vocabulary deleted')
       setDeleteTarget(null)
     } catch (error) {
-      toast.error(error.message || 'Unable to delete vocabulary')
+      notify.error(error, 'Unable to delete vocabulary')
     }
   }
 
   const handleExportAllVocabulariesPdf = async () => {
     try {
       await exportAllVocabulariesPdf.mutateAsync()
-      toast.success('Vocabulary PDF download started')
+      notify.success('Vocabulary PDF download started')
     } catch (error) {
-      toast.error(error.message || 'Unable to export vocabulary PDF')
+      notify.error(error, 'Unable to export vocabulary PDF')
     }
   }
 

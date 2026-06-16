@@ -1,11 +1,14 @@
 import { FiInbox } from 'react-icons/fi'
+import EmptyState from '@/components/common/EmptyState'
 
 export default function AdminEmptyState({ title = 'No data', description = 'There is nothing to show yet.' }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.025] p-10 text-center">
-      <FiInbox className="mx-auto h-8 w-8 text-slate-600" aria-hidden="true" />
-      <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
-      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">{description}</p>
-    </div>
+    <EmptyState
+      icon={FiInbox}
+      title={title}
+      description={description}
+      variant="panel"
+      className="border-dashed border-white/12 bg-white/[0.025] text-slate-100 [&_h2]:text-white [&_p]:text-slate-500 [&>div:first-child]:bg-white/[0.06] [&>div:first-child]:text-slate-500"
+    />
   )
 }

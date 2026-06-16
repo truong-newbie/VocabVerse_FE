@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 import { FiBookOpen, FiChevronLeft, FiChevronRight, FiLayers, FiPlus, FiSearch } from 'react-icons/fi'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -19,6 +18,7 @@ import {
   useDeleteCollection,
   useUpdateCollection,
 } from '@/features/collection/useCollections'
+import { notify } from '@/lib/toast'
 
 const PAGE_SIZE = 10
 const visibilityFilters = ['ALL', 'PRIVATE', 'PUBLIC', 'SYSTEM']
@@ -110,21 +110,21 @@ export default function CollectionsPage() {
     try {
       if (formState.mode === 'edit') {
         await updateMutation.mutateAsync({ id: formState.collection.id, payload })
-        toast.success('Collection updated')
+        notify.success('Collection updated')
       } else {
         await createMutation.mutateAsync(payload)
-        toast.success('Collection created')
+        notify.success('Collection created')
         setPage(0)
       }
       closeForm()
     } catch (error) {
-      toast.error(error.message || 'Unable to save collection')
+      notify.error(error, 'Unable to save collection')
     }
   }
 
   const handleDeleteRequest = (collection) => {
     if (collection.visibility === 'SYSTEM') {
-      toast.error('SYSTEM collections cannot be deleted')
+      notify.error(new Error('SYSTEM collections cannot be deleted'), 'SYSTEM collections cannot be deleted')
       return
     }
     setDeleteTarget(collection)
@@ -135,10 +135,10 @@ export default function CollectionsPage() {
 
     try {
       await deleteMutation.mutateAsync(deleteTarget.id)
-      toast.success('Collection deleted')
+      notify.success('Collection deleted')
       setDeleteTarget(null)
     } catch (error) {
-      toast.error(error.message || 'Unable to delete collection')
+      notify.error(error, 'Unable to delete collection')
     }
   }
 
@@ -147,9 +147,9 @@ export default function CollectionsPage() {
 
     try {
       await exportCollectionPdf.mutateAsync(collection.id)
-      toast.success('Collection PDF download started')
+      notify.success('Collection PDF download started')
     } catch (error) {
-      toast.error(error.message || 'Unable to export collection PDF')
+      notify.error(error, 'Unable to export collection PDF')
     }
   }
 
